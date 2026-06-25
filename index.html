@@ -159,6 +159,7 @@
             height: 100%;
             object-fit: cover;
             display: block;
+            /* БЕЗ ЗЕРКАЛА */
         }
 
         #output-canvas {
@@ -762,7 +763,7 @@
 
     <script>
         // ============================================================
-        //  1. THREE.JS — 3D-ФОН (СЛЕГКА ЗАМЕДЛЕННАЯ АНИМАЦИЯ)
+        //  1. THREE.JS — 3D-ФОН
         // ============================================================
         (function init3D() {
             const container = document.getElementById('canvas-container');
@@ -870,7 +871,6 @@
             function animate() {
                 requestAnimationFrame(animate);
 
-                // Плавное замедленное движение (скорость 0.02 вместо 0.05)
                 currentRotX += (targetRotX - currentRotX) * 0.02;
                 currentRotY += (targetRotY - currentRotY) * 0.02;
 
@@ -1124,7 +1124,7 @@
 
 
         // ============================================================
-        //  3. MEDIAPIPE + UI
+        //  3. MEDIAPIPE + UI (БЕЗ ЗЕРКАЛИРОВАНИЯ)
         // ============================================================
 
         const video = document.getElementById('video');
@@ -1241,6 +1241,9 @@
             });
         }
 
+        // ============================================================
+        //  onResults — БЕЗ ЗЕРКАЛИРОВАНИЯ
+        // ============================================================
         function onResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1254,8 +1257,11 @@
                     confidence: handedness[i]?.score || 0.5
                 }));
 
+                // Рисуем скелет БЕЗ зеркалирования
                 for (let i = 0; i < landmarks.length; i++) {
                     const hand = landmarks[i];
+                    // ИСПОЛЬЗУЕМ ОРИГИНАЛЬНЫЕ КООРДИНАТЫ — НЕ ЗЕРКАЛИМ
+
                     const connections = [
                         [0, 1], [1, 2], [2, 3], [3, 4],
                         [0, 5], [5, 6], [6, 7], [7, 8],
@@ -1348,8 +1354,8 @@
         window.addEventListener('resize', resizeCanvas);
         setTimeout(resizeCanvas, 200);
 
-        console.log('Gesture Wave запущен!');
-        console.log('Доступные жесты:', GESTURE_LIST.join(', '));
+        console.log('🚀 Gesture Wave запущен!');
+        console.log('📋 Доступные жесты:', GESTURE_LIST.join(', '));
     </script>
 
 </body>
