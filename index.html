@@ -1162,10 +1162,7 @@
                     const hand = landmarks[i];
 
                     // ОТЗЕРКАЛИВАЕМ КООРДИНАТЫ: x = 1 - x
-                    const mirroredHand = hand.map(p => ({
-                        x: 1 - p.x,
-                        y: p.y
-                    }));
+                    const mirroredHand = hand;
 
                     const connections = [
                         [0, 1], [1, 2], [2, 3], [3, 4],
