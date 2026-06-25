@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Gesture Wave | Распознавание жестов</title>
 
-    <!-- Шрифты -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-    <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
     </script>
 
-    <!-- MediaPipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js">
@@ -21,7 +18,6 @@
     </script>
 
     <style>
-        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
         * {
             margin: 0;
             padding: 0;
@@ -585,7 +581,6 @@
 </head>
 <body>
 
-    <!-- 3D КОНТЕЙНЕР -->
     <div id="canvas-container"></div>
 
     <div class="page-wrapper">
@@ -848,10 +843,9 @@
 
 
         // ============================================================
-        //  2. РАСПОЗНАВАНИЕ ЖЕСТОВ (ТОЧНО КАК В hand_tracker.py)
+        //  2. РАСПОЗНАВАНИЕ ЖЕСТОВ
         // ============================================================
 
-        // Маппинг жестов → файлы мемов (как в GESTURE_TO_MEME)
         const GESTURE_MEME_MAP = {
             "Указывая вверх": "pic_finger_up.jpg",
             "Большой палец вверх": "pic_thumb_up.jpg",
@@ -868,33 +862,28 @@
 
         const GESTURE_LIST = Object.keys(GESTURE_MEME_MAP);
 
-        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (как в hand_tracker.py) ---
         function calculateDistance(p1, p2) {
             return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
         }
 
         function getFingerStates(landmarks, handType) {
-            // fingers: [thumb, index, middle, ring, pinky]
             const fingers = [false, false, false, false, false];
 
-            // Большой палец (по горизонтали)
             if (handType === 'Right') {
                 fingers[0] = landmarks[4].x < landmarks[3].x;
             } else {
                 fingers[0] = landmarks[4].x > landmarks[3].x;
             }
 
-            // Остальные пальцы (по Y)
-            fingers[1] = landmarks[8].y < landmarks[6].y; // Указательный
-            fingers[2] = landmarks[12].y < landmarks[10].y; // Средний
-            fingers[3] = landmarks[16].y < landmarks[14].y; // Безымянный
-            fingers[4] = landmarks[20].y < landmarks[18].y; // Мизинец
+            fingers[1] = landmarks[8].y < landmarks[6].y;
+            fingers[2] = landmarks[12].y < landmarks[10].y;
+            fingers[3] = landmarks[16].y < landmarks[14].y;
+            fingers[4] = landmarks[20].y < landmarks[18].y;
 
             return fingers;
         }
 
         function isCherryGesture(landmarks, handType) {
-            // Проверка жеста "Вишенка на торте" как в hand_tracker.py
             const points = landmarks;
             const thumbTip = points[4];
             const fingerTips = [8, 12, 16, 20];
@@ -912,7 +901,6 @@
                 return true;
             }
 
-            // Альтернативная проверка: все пальцы согнуты и близко к центру
             let centerX = 0,
                 centerY = 0;
             for (const tipIdx of fingerTips) {
@@ -940,7 +928,6 @@
                 }
             }
 
-            // Проверка на жест "щепотка"
             const indexDist = calculateDistance(points[8], thumbTip);
             const middleDist = calculateDistance(points[12], thumbTip);
             if (indexDist < 0.04 && middleDist < 0.05) {
@@ -954,7 +941,6 @@
             return false;
         }
 
-        // --- ГЛАВНАЯ ФУНКЦИЯ РАСПОЗНАВАНИЯ (как в recognize_gesture) ---
         function recognizeGesture(landmarks, handedness) {
             if (!landmarks || landmarks.length === 0) {
                 return { gesture: "Нет рук", confidence: 1.0 };
@@ -962,7 +948,6 @@
 
             const numHands = landmarks.length;
 
-            // ========== ЖЕСТЫ С ДВУМЯ РУКАМИ ==========
             if (numHands === 2) {
                 const hand1 = landmarks[0];
                 const hand2 = landmarks[1];
@@ -975,17 +960,14 @@
                 const count1 = fingers1.filter(Boolean).length;
                 const count2 = fingers2.filter(Boolean).length;
 
-                // FIST (кулаки)
                 if (count1 === 0 || count2 === 0) {
                     return { gesture: "Кулак", confidence: 0.95 };
                 }
 
-                // OPEN PALM (две открытые ладони)
                 if (count1 === 5 && count2 === 5) {
                     return { gesture: "Открытая ладонь", confidence: 0.9 };
                 }
 
-                // TWO PALMS PARALLEL (две ладони параллельно)
                 const thumb1_x = hand1[4].x;
                 const thumb2_x = hand2[4].x;
                 const palm1_x = hand1[0].x;
@@ -1005,7 +987,6 @@
                     }
                 }
 
-                // I DON'T KNOW (Я не знаю)
                 if (type1 === 'Left' && type2 === 'Right') {
                     if (thumb1_x < palm1_x && thumb2_x > palm2_x) {
                         if (count1 === 5 && count2 === 5) {
@@ -1023,7 +1004,6 @@
                 return { gesture: "Две руки", confidence: 0.7 };
             }
 
-            // ========== ЖЕСТЫ С ОДНОЙ РУКОЙ ==========
             if (numHands === 1) {
                 const hand = landmarks[0];
                 const handType = handedness?.[0]?.label || 'Right';
@@ -1032,17 +1012,14 @@
                 const fingers = getFingerStates(points, handType);
                 const fingerCount = fingers.filter(Boolean).length;
 
-                // FIST (кулак)
                 if (fingerCount === 0) {
                     return { gesture: "Кулак", confidence: 0.95 };
                 }
 
-                // CHERRY (вишенка на торте)
                 if (isCherryGesture(points, handType)) {
                     return { gesture: "Вишенка на торте", confidence: 0.9 };
                 }
 
-                // LITTLE (жест "мало")
                 if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     const dist = calculateDistance(points[4], points[8]);
                     if (dist < 0.08) {
@@ -1050,34 +1027,28 @@
                     }
                 }
 
-                // POINTING UP (указываю вверх)
                 if (!fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     return { gesture: "Указывая вверх", confidence: 0.92 };
                 }
 
-                // THUMBS UP (большой палец вверх)
                 if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     if (points[4].y < points[3].y) {
                         return { gesture: "Большой палец вверх", confidence: 0.95 };
                     }
                 }
 
-                // PEACE / VICTORY (Мир)
                 if (!fingers[0] && fingers[1] && fingers[2] && !fingers[3] && !fingers[4]) {
                     return { gesture: "Мир", confidence: 0.95 };
                 }
 
-                // OPEN PALM (открытая ладонь)
                 if (fingerCount === 5) {
                     return { gesture: "Открытая ладонь", confidence: 0.95 };
                 }
 
-                // ROCK (Рок)
                 if (fingers[1] && !fingers[2] && !fingers[3] && fingers[4]) {
                     return { gesture: "Рок", confidence: 0.88 };
                 }
 
-                // OK жест
                 if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     const dist = calculateDistance(points[4], points[8]);
                     if (dist < 0.04) {
@@ -1085,7 +1056,6 @@
                     }
                 }
 
-                // По умолчанию
                 if (fingerCount === 1) {
                     if (fingers[0]) return { gesture: "Только большой палец", confidence: 0.5 };
                     if (fingers[1]) return { gesture: "Только указательный", confidence: 0.5 };
@@ -1172,6 +1142,9 @@
             });
         }
 
+        // ============================================================
+        //  ИСПРАВЛЕННАЯ ФУНКЦИЯ onResults (с зеркальным отображением)
+        // ============================================================
         function onResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1185,38 +1158,28 @@
                     confidence: handedness[i]?.score || 0.5
                 }));
 
-                // Рисуем скелет
+                // Рисуем скелет с зеркальным отражением
                 for (let i = 0; i < landmarks.length; i++) {
                     const hand = landmarks[i];
+
+                    // ОТЗЕРКАЛИВАЕМ КООРДИНАТЫ: x = 1 - x
+                    const mirroredHand = hand.map(p => ({
+                        x: 1 - p.x,
+                        y: p.y
+                    }));
+
                     const connections = [
-                        [0, 1],
-                        [1, 2],
-                        [2, 3],
-                        [3, 4],
-                        [0, 5],
-                        [5, 6],
-                        [6, 7],
-                        [7, 8],
-                        [5, 9],
-                        [9, 10],
-                        [10, 11],
-                        [11, 12],
-                        [9, 13],
-                        [13, 14],
-                        [14, 15],
-                        [15, 16],
-                        [13, 17],
-                        [17, 18],
-                        [18, 19],
-                        [19, 20],
-                        [0, 17],
-                        [5, 9],
-                        [9, 13],
-                        [13, 17]
+                        [0, 1], [1, 2], [2, 3], [3, 4],
+                        [0, 5], [5, 6], [6, 7], [7, 8],
+                        [5, 9], [9, 10], [10, 11], [11, 12],
+                        [9, 13], [13, 14], [14, 15], [15, 16],
+                        [13, 17], [17, 18], [18, 19], [19, 20],
+                        [0, 17], [5, 9], [9, 13], [13, 17]
                     ];
+
                     for (const [s, e] of connections) {
-                        const p1 = hand[s],
-                            p2 = hand[e];
+                        const p1 = mirroredHand[s];
+                        const p2 = mirroredHand[e];
                         ctx.beginPath();
                         ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
                         ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
@@ -1224,7 +1187,8 @@
                         ctx.lineWidth = 2;
                         ctx.stroke();
                     }
-                    for (const p of hand) {
+
+                    for (const p of mirroredHand) {
                         ctx.beginPath();
                         ctx.arc(p.x * canvas.width, p.y * canvas.height, 4, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
@@ -1234,16 +1198,17 @@
                         ctx.stroke();
                     }
 
+                    // Подпись руки (тоже зеркально)
                     if (handedness[i]) {
                         const label = handedness[i].label;
-                        const wrist = hand[0];
+                        const wrist = mirroredHand[0];
                         ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
                         ctx.font = '14px Inter, sans-serif';
                         ctx.fillText(label, wrist.x * canvas.width - 20, wrist.y * canvas.height - 20);
                     }
                 }
 
-                // Распознаем жест (передаем тип руки)
+                // Распознаем жест (передаем оригинальные координаты, без зеркала)
                 const result = recognizeGesture(landmarks, handedness);
                 updateUI(result.gesture, result.confidence, hands);
             } else {
