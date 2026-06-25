@@ -160,7 +160,6 @@
             object-fit: cover;
             display: block;
             transform: scaleX(-1);
-            /* Зеркальное отображение как в оригинале */
         }
 
         #output-canvas {
@@ -1125,7 +1124,7 @@
 
 
         // ============================================================
-        //  3. MEDIAPIPE + UI (С ЗЕРКАЛИРОВАНИЕМ КАК В ОРИГИНАЛЕ)
+        //  3. MEDIAPIPE + UI
         // ============================================================
 
         const video = document.getElementById('video');
@@ -1243,7 +1242,7 @@
         }
 
         // ============================================================
-        //  onResults — С ЗЕРКАЛИРОВАНИЕМ (как в оригинальном проекте)
+        //  onResults — С ЗЕРКАЛИРОВАНИЕМ И ПРАВИЛЬНЫМИ НАДПИСЯМИ
         // ============================================================
         function onResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1258,10 +1257,9 @@
                     confidence: handedness[i]?.score || 0.5
                 }));
 
-                // Рисуем скелет С ЗЕРКАЛИРОВАНИЕМ (как в app.py с mirror_enabled=True)
                 for (let i = 0; i < landmarks.length; i++) {
                     const hand = landmarks[i];
-                    // ОТЗЕРКАЛИВАЕМ координаты по X, чтобы совпадало с зеркальным видео
+                    // ОТЗЕРКАЛИВАЕМ координаты по X
                     const mirroredHand = hand.map(p => ({
                         x: 1 - p.x,
                         y: p.y
@@ -1297,8 +1295,16 @@
                         ctx.stroke();
                     }
 
+                    // ПОДПИСЬ: отзеркаливаем тип руки
                     if (handedness[i]) {
-                        const label = handedness[i].label;
+                        let label = handedness[i].label;
+                        // Меняем Right ↔ Left для зеркального отображения
+                        if (label === 'Right') {
+                            label = 'Left';
+                        } else if (label === 'Left') {
+                            label = 'Right';
+                        }
+
                         const wrist = mirroredHand[0];
                         ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
                         ctx.font = '14px Inter, sans-serif';
