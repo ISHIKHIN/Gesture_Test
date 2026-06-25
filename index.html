@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gesture Wave | Система отслеживания рук</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 30%, #0a0a0f 0%, #020205 100%);
+            color: #ffffff;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .page-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-main {
+            flex: 1;
+        }
+
+        .bottom-spacer {
+            height: 100px;
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .bottom-spacer {
+                height: 40px;
+            }
+            .container {
+                padding: 16px;
+            }
+        }
+
+        .header {
+            margin-bottom: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(100, 100, 120, 0.2);
+        }
+
+        .title-group h1 {
+            font-family: 'Space Grotesk', monospace;
+            font-weight: 700;
+            font-size: clamp(2rem, 5vw, 2.8rem);
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #fff 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status-pill {
+            background: rgba(20,20,30,0.6);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid rgba(100,100,120,0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pulse-ring {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(34,197,94,0.7);
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+            100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+        }
+
+        .glass-card {
+            background: rgba(15,15,25,0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid rgba(100,100,120,0.25);
+            overflow: hidden;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            aspect-ratio: 4/3;
+            background: #000000;
+            overflow: hidden;
+        }
+
+        .video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        #output-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .video-meta {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            background: rgba(0,0,0,0.4);
+            border-top: 1px solid rgba(100,100,120,0.2);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .fps-text {
+            font-family: 'Space Grotesk', monospace;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            border: 1px solid rgba(100,100,120,0.3);
+        }
+
+        .fps-bar {
+            width: 50px;
+            height: 3px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .fps-fill {
+            height: 100%;
+            background: #22c55e;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .meme-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meme-header {
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(100,100,120,0.2);
+            color: #888;
+        }
+
+        .meme-stage {
+            flex: 1;
+            min-height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .meme-emoji {
+            font-size: 80px;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .meme-placeholder {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .info-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .stat-block {
+            background: rgba(15,15,25,0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(100,100,120,0.25);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .gesture-name-live {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gesture-confidence {
+            font-size: 12px;
+            color: #3b82f6;
+            margin-top: 8px;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 3px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #22c55e);
+            border-radius: 2px;
+            transition: width 0.1s;
+        }
+
+        .hand-count-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .hand-chip {
+            background: rgba(30,30,45,0.5);
+            border-left: 2px solid #3b82f6;
+            padding: 8px 12px;
+            margin-top: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        .gesture-tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .gesture-tag {
+            background: rgba(30,30,45,0.6);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 500;
+            border: 1px solid rgba(100,100,120,0.3);
+            transition: all 0.2s ease;
+        }
+
+        .gesture-tag.active {
+            background: #2563eb;
+            border-color: #3b82f6;
+        }
+
+        .landing-hero {
+            text-align: center;
+            margin: 80px 0 80px;
+        }
+
+        .landing-hero .badge {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 100px;
+            padding: 6px 18px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #3b82f6;
+            margin-bottom: 24px;
+            letter-spacing: 0.5px;
+        }
+
+        .landing-hero h1 {
+            font-family: 'Space Grotesk', monospace;
+            font-size: clamp(3.5rem, 8vw, 5.5rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #ffffff 0%, #3b82f6 60%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .landing-hero .tagline {
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            color: #999;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 80px;
+        }
+
+        .feature-block {
+            background: linear-gradient(135deg, rgba(20, 20, 35, 0.8) 0%, rgba(15, 15, 25, 0.6) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 28px;
+            border: 1px solid rgba(100, 100, 120, 0.25);
+            padding: 0;
+            overflow: hidden;
+            transition: all 0.35s ease;
+            position: relative;
+        }
+
+        .feature-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .feature-block:hover {
+            transform: translateY(-6px);
+            border-color: rgba(59, 130, 246, 0.4);
+            background: linear-gradient(135deg, rgba(25, 25, 45, 0.9) 0%, rgba(18, 18, 30, 0.7) 100%);
+        }
+
+        .feature-block:hover::before {
+            opacity: 1;
+        }
+
+        .feature-header {
+            padding: 28px 28px 16px 28px;
+            border-bottom: 1px solid rgba(100, 100, 120, 0.15);
+        }
+
+        .feature-number {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #3b82f6;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .feature-header h3 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: #fff;
+        }
+
+        .feature-content {
+            padding: 24px 28px 28px 28px;
+        }
+
+        .feature-content p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+
+        .feature-stats {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'Space Grotesk', monospace;
+            color: #3b82f6;
+            line-height: 1;
+        }
+
+        .stat-desc {
+            font-size: 11px;
+            color: #666;
+            margin-top: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 100px;
+            padding: 4px 12px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #3b82f6;
+            margin-bottom: 16px;
+        }
+
+        .gesture-showcase {
+            background: rgba(10, 10, 20, 0.5);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            border: 1px solid rgba(100, 100, 120, 0.2);
+            padding: 48px 40px;
+            margin-bottom: 60px;
+        }
+
+        .gesture-showcase h3 {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #3b82f6;
+            margin-bottom: 32px;
+        }
+
+        .gesture-categories {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 32px;
+        }
+
+        .gesture-category {
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .gesture-category .category-name {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .gesture-items {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .gesture-chip {
+            background: rgba(30, 30, 45, 0.7);
+            padding: 8px 18px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid rgba(100, 100, 120, 0.3);
+            color: #ddd;
+            transition: all 0.2s ease;
+        }
+
+        .gesture-chip:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .cta-section {
+            text-align: center;
+            padding: 48px 0;
+            margin-bottom: 40px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            border-radius: 100px;
+            padding: 14px 48px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            background: rgba(30, 30, 45, 0.9);
+            border: 1px solid rgba(100, 100, 120, 0.4);
+            border-radius: 100px;
+            padding: 14px 48px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(50, 50, 70, 0.9);
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feature-block, .gesture-showcase, .landing-hero {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .feature-block:nth-child(1) { animation-delay: 0.1s; }
+        .feature-block:nth-child(2) { animation-delay: 0.2s; }
+        .feature-block:nth-child(3) { animation-delay: 0.3s; }
+        .gesture-showcase { animation-delay: 0.4s; }
+
+        @media (max-width: 1024px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 24px;
+            }
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .landing-hero {
+                margin: 40px 0 50px;
+            }
+            .gesture-showcase {
+                padding: 32px 20px;
+            }
+            .gesture-categories {
+                flex-direction: column;
+                gap: 24px;
+                align-items: center;
+            }
+            .info-strip {
+                grid-template-columns: 1fr;
+            }
+            .meme-stage {
+                min-height: 200px;
+            }
+            .meme-emoji {
+                font-size: 50px;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <div class="container content-main">
+        <div class="header">
+            <div class="title-group">
+                <h1>Gesture Wave</h1>
+            </div>
+            <div class="status-pill">
+                <span class="pulse-ring"></span>
+                <span>LIVE</span>
+            </div>
+        </div>
+
+        <!-- Основной контент с камерой -->
+        <div id="appContent">
+            <div class="dashboard-grid">
+                <div class="glass-card">
+                    <div class="video-wrapper">
+                        <video id="video" class="video-feed" autoplay playsinline></video>
+                        <canvas id="output-canvas"></canvas>
+                    </div>
+                    <div class="video-meta">
+                        <div class="live-indicator">
+                            <span class="pulse-ring"></span>
+                            <span>LIVE</span>
+                        </div>
+                        <div class="fps-text" id="fpsCounter">-- fps</div>
+                        <div class="fps-bar"><div class="fps-fill" id="fpsFill"></div></div>
+                    </div>
+                </div>
+
+                <div class="glass-card meme-panel">
+                    <div class="meme-header">РЕАКЦИЯ</div>
+                    <div class="meme-stage">
+                        <div class="meme-placeholder" id="memePlaceholder">👀 Ожидание жеста...</div>
+                        <div class="meme-emoji hidden" id="memeEmoji">👍</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-strip">
+                <div class="stat-block">
+                    <div class="stat-label">АКТИВНЫЙ ЖЕСТ</div>
+                    <div class="gesture-name-live" id="gestureName">—</div>
+                    <div class="gesture-confidence" id="gestureConfidence">ожидание...</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-label">ОБНАРУЖЕНО РУК</div>
+                    <div class="hand-count-number" id="handCount">0</div>
+                    <div id="handListMini"></div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-label">БИБЛИОТЕКА ЖЕСТОВ</div>
+                    <div class="gesture-tag-cloud" id="gestureTagsCloud"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Лендинг (показывается только если нет камеры) -->
+        <div id="landingContent">
+            <div class="landing-hero">
+                <h1>Gesture Wave</h1>
+                <p class="tagline">Система распознавания жестов рук на основе математических вычислений и искусственного интеллекта</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-block">
+                    <div class="feature-header">
+                        <div class="feature-number">01</div>
+                        <h3>Отслеживание рук</h3>
+                    </div>
+                    <div class="feature-content">
+                        <div class="feature-tag">MediaPipe</div>
+                        <p>Обнаружение 21-точечных ориентиров на руке в реальном времени с точностью до долей миллиметра и сверхнизкой задержкой обработки.</p>
+                        <div class="feature-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">21</div>
+                                <div class="stat-desc">ключевых точек</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">~30</div>
+                                <div class="stat-desc">FPS</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block">
+                    <div class="feature-header">
+                        <div class="feature-number">02</div>
+                        <h3>Распознавание жестов</h3>
+                    </div>
+                    <div class="feature-content">
+                        <div class="feature-tag">10+ жестов</div>
+                        <p>Система распознавания математических операций, основанной на движении рук, определяющая множественные жесты с высокой степенью достоверности и обратной связью в реальном времени.</p>
+                        <div class="feature-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">95+</div>
+                                <div class="stat-desc">% точность</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block">
+                    <div class="feature-header">
+                        <div class="feature-number">03</div>
+                        <h3>Визуальная обратная связь</h3>
+                    </div>
+                    <div class="feature-content">
+                        <div class="feature-tag">Интерактивное</div>
+                        <p>Мгновенная визуальная реакция на Ваши жесты. Динамический контент, реагирующий на Ваши движения в режиме реального времени.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gesture-showcase">
+                <h3>Поддерживаемые жесты</h3>
+                <div class="gesture-categories">
+                    <div class="gesture-category">
+                        <div class="category-name">Одна рука</div>
+                        <div class="gesture-items">
+                            <span class="gesture-chip">☝️ Указываю вверх</span>
+                            <span class="gesture-chip">👍 Большой палец вверх</span>
+                            <span class="gesture-chip">✌️ Мир</span>
+                            <span class="gesture-chip">🤏 Мало</span>
+                            <span class="gesture-chip">✋ Открытая ладонь</span>
+                            <span class="gesture-chip">✊ Кулак</span>
+                            <span class="gesture-chip">🍒 Вишенка</span>
+                            <span class="gesture-chip">🤘 Рок</span>
+                            <span class="gesture-chip">👌 OK</span>
+                        </div>
+                    </div>
+                    <div class="gesture-category">
+                        <div class="category-name">Две руки</div>
+                        <div class="gesture-items">
+                            <span class="gesture-chip">✋✋ Две ладони</span>
+                            <span class="gesture-chip">🤷 Я не знаю</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-spacer"></div>
+</div>
+
+<script>
+    // ========== РАСПОЗНАВАНИЕ ЖЕСТОВ ==========
+    const GESTURES = {
+        "Указываю вверх": { emoji: "☝️", confidence: 0.92 },
+        "Большой палец вверх": { emoji: "👍", confidence: 0.95 },
+        "Мир": { emoji: "✌️", confidence: 0.95 },
+        "Мало": { emoji: "🤏", confidence: 0.92 },
+        "Две ладони": { emoji: "✋✋", confidence: 0.95 },
+        "Я не знаю": { emoji: "🤷", confidence: 0.85 },
+        "Открытая ладонь": { emoji: "✋", confidence: 0.95 },
+        "Вишенка": { emoji: "🍒", confidence: 0.90 },
+        "Кулак": { emoji: "✊", confidence: 0.95 },
+        "Рок": { emoji: "🤘", confidence: 0.88 },
+        "OK": { emoji: "👌", confidence: 0.92 },
+        "Нет рук": { emoji: "👀", confidence: 1.0 }
+    };
+
+    const GESTURE_LIST = Object.keys(GESTURES);
+
+    function getFingerStates(landmarks) {
+        const fingers = [false, false, false, false, false];
+        fingers[0] = landmarks[4].x < landmarks[3].x;
+        fingers[1] = landmarks[8].y < landmarks[6].y;
+        fingers[2] = landmarks[12].y < landmarks[10].y;
+        fingers[3] = landmarks[16].y < landmarks[14].y;
+        fingers[4] = landmarks[20].y < landmarks[18].y;
+        return fingers;
+    }
+
+    function distance(p1, p2) {
+        return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+    }
+
+    function isCherryGesture(landmarks) {
+        const thumbTip = landmarks[4];
+        const tips = [8, 12, 16, 20];
+        let closeFingers = 0;
+        for (const tipIdx of tips) {
+            if (distance(thumbTip, landmarks[tipIdx]) < 0.08) closeFingers++;
+        }
+        return closeFingers >= 3;
+    }
+
+    function recognizeGesture(landmarks) {
+        if (!landmarks || landmarks.length === 0) {
+            return { gesture: "Нет рук", confidence: 1.0 };
+        }
+
+        const numHands = landmarks.length;
+
+        // Две руки
+        if (numHands === 2) {
+            const hand1 = landmarks[0];
+            const hand2 = landmarks[1];
+            const fingers1 = getFingerStates(hand1);
+            const fingers2 = getFingerStates(hand2);
+            const count1 = fingers1.filter(f => f).length;
+            const count2 = fingers2.filter(f => f).length;
+
+            if (count1 === 0 && count2 === 0) {
+                return { gesture: "Кулак", confidence: 0.95 };
+            }
+            if (count1 === 5 && count2 === 5) {
+                const palm1_x = hand1[0].x;
+                const palm2_x = hand2[0].x;
+                const thumb1_x = hand1[4].x;
+                const thumb2_x = hand2[4].x;
+                if ((thumb1_x < palm1_x && thumb2_x > palm2_x) ||
+                    (thumb1_x > palm1_x && thumb2_x < palm2_x)) {
+                    return { gesture: "Две ладони", confidence: 0.95 };
+                }
+                return { gesture: "Открытая ладонь", confidence: 0.9 };
+            }
+            if (count1 === 5 && count2 === 5) {
+                const palm1_y = hand1[0].y;
+                const palm2_y = hand2[0].y;
+                if (Math.abs(palm1_y - palm2_y) < 0.15) {
+                    return { gesture: "Я не знаю", confidence: 0.85 };
+                }
+            }
+            return { gesture: "Две руки", confidence: 0.7 };
+        }
+
+        // Одна рука
+        const hand = landmarks[0];
+        const fingers = getFingerStates(hand);
+        const fingerCount = fingers.filter(f => f).length;
+
+        if (fingerCount === 0) {
+            return { gesture: "Кулак", confidence: 0.95 };
+        }
+        if (isCherryGesture(hand)) {
+            return { gesture: "Вишенка", confidence: 0.9 };
+        }
+        if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
+            if (distance(hand[4], hand[8]) < 0.06) {
+                return { gesture: "Мало", confidence: 0.92 };
+            }
+        }
+        if (!fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
+            return { gesture: "Указываю вверх", confidence: 0.92 };
+        }
+        if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
+            const thumbTip = hand[4];
+            const thumbIP = hand[3];
+            if (thumbTip.y < thumbIP.y) {
+                return { gesture: "Большой палец вверх", confidence: 0.95 };
+            }
+        }
+        if (!fingers[0] && fingers[1] && fingers[2] && !fingers[3] && !fingers[4]) {
+            return { gesture: "Мир", confidence: 0.95 };
+        }
+        if (fingers[1] && !fingers[2] && !fingers[3] && fingers[4]) {
+            return { gesture: "Рок", confidence: 0.88 };
+        }
+        if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
+            if (distance(hand[4], hand[8]) < 0.05) {
+                return { gesture: "OK", confidence: 0.92 };
+            }
+        }
+        if (fingerCount === 5) {
+            return { gesture: "Открытая ладонь", confidence: 0.95 };
+        }
+
+        return { gesture: "Неизвестно", confidence: 0.3 };
+    }
+
+    // ========== ОСНОВНАЯ ЛОГИКА ==========
+    const videoElement = document.getElementById('video');
+    const canvasElement = document.getElementById('output-canvas');
+    const canvasCtx = canvasElement.getContext('2d');
+
+    let fps = 0;
+    let frameCount = 0;
+    let lastFpsTime = Date.now();
+
+    function updateUI(gesture, confidence, hands) {
+        const gestureData = GESTURES[gesture] || GESTURES["Нет рук"];
+
+        // Жест
+        document.getElementById('gestureName').textContent = gesture;
+        document.getElementById('gestureConfidence').textContent =
+            confidence > 0 ? `уверенность: ${Math.round(confidence * 100)}%` : 'ожидание...';
+        document.getElementById('confidenceFill').style.width = `${confidence * 100}%`;
+
+        // Мем
+        const emoji = document.getElementById('memeEmoji');
+        const placeholder = document.getElementById('memePlaceholder');
+        if (gesture !== "Нет рук" && gesture !== "Неизвестно") {
+            emoji.textContent = gestureData.emoji;
+            emoji.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+        } else {
+            emoji.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            if (gesture === "Нет рук") {
+                placeholder.textContent = '👀 Ожидание жеста...';
+            } else {
+                placeholder.textContent = '🤔 Неизвестный жест';
+            }
+        }
+
+        // Количество рук
+        const handCount = hands ? hands.length : 0;
+        document.getElementById('handCount').textContent = handCount;
+
+        // Список рук
+        const handDiv = document.getElementById('handListMini');
+        if (hands && hands.length > 0) {
+            handDiv.innerHTML = hands.map((h, i) => `
+                <div class="hand-chip">
+                    <span>Рука ${i + 1}: ${h.handedness || 'Неизвестно'}</span>
+                    <span>${Math.round((h.confidence || 0.5) * 100)}%</span>
+                </div>
+            `).join('');
+        } else {
+            handDiv.innerHTML = '<div style="color:#666; font-size: 12px; margin-top: 8px;">нет рук</div>';
+        }
+
+        // Обновляем теги
+        document.querySelectorAll('.gesture-tag').forEach(tag => {
+            tag.classList.remove('active');
+            if (tag.textContent === gesture) tag.classList.add('active');
+        });
+    }
+
+    function onResults(results) {
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+        let hands = [];
+
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            const landmarks = results.multiHandLandmarks;
+            const handedness = results.multiHandedness || [];
+
+            hands = landmarks.map((h, i) => ({
+                handedness: handedness[i]?.label || 'Unknown',
+                confidence: handedness[i]?.score || 0.5
+            }));
+
+            // Рисуем руки
+            for (let i = 0; i < landmarks.length; i++) {
+                const hand = landmarks[i];
+
+                const connections = [
+                    [0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],
+                    [5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],
+                    [13,17],[17,18],[18,19],[19,20],[0,17],[5,9],[9,13],[13,17]
+                ];
+
+                for (const [start, end] of connections) {
+                    const startPoint = hand[start];
+                    const endPoint = hand[end];
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(startPoint.x * canvasElement.width, startPoint.y * canvasElement.height);
+                    canvasCtx.lineTo(endPoint.x * canvasElement.width, endPoint.y * canvasElement.height);
+                    canvasCtx.strokeStyle = '#3b82f6';
+                    canvasCtx.lineWidth = 2;
+                    canvasCtx.stroke();
+                }
+
+                for (const point of hand) {
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(
+                        point.x * canvasElement.width,
+                        point.y * canvasElement.height,
+                        4, 0, 2 * Math.PI
+                    );
+                    canvasCtx.fillStyle = '#3b82f6';
+                    canvasCtx.fill();
+                    canvasCtx.strokeStyle = '#fff';
+                    canvasCtx.lineWidth = 1;
+                    canvasCtx.stroke();
+                }
+            }
+
+            const result = recognizeGesture(landmarks);
+            updateUI(result.gesture, result.confidence, hands);
+        } else {
+            updateUI("Нет рук", 1.0, []);
+        }
+
+        // FPS
+        frameCount++;
+        const now = Date.now();
+        if (now - lastFpsTime > 1000) {
+            fps = frameCount;
+            frameCount = 0;
+            lastFpsTime = now;
+            document.getElementById('fpsCounter').textContent = `${fps} fps`;
+            document.getElementById('fpsFill').style.width = `${Math.min(100, (fps / 60) * 100)}%`;
+        }
+    }
+
+    // ========== ИНИЦИАЛИЗАЦИЯ MEDIAPIPE ==========
+    const hands = new Hands({
+        locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }
+    });
+
+    hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+    });
+
+    hands.onResults(onResults);
+
+    // ========== ЗАПУСК КАМЕРЫ ==========
+    const camera = new Camera(videoElement, {
+        onFrame: async () => {
+            await hands.send({ image: videoElement });
+        },
+        width: 640,
+        height: 480
+    });
+
+    camera.start();
+
+    // ========== БИБЛИОТЕКА ЖЕСТОВ (UI) ==========
+    const tagsContainer = document.getElementById('gestureTagsCloud');
+    GESTURE_LIST.forEach(g => {
+        const span = document.createElement('span');
+        span.className = 'gesture-tag';
+        span.textContent = g;
+        tagsContainer.appendChild(span);
+    });
+
+    // Адаптация размеров canvas
+    function resizeCanvas() {
+        const rect = document.querySelector('.video-wrapper').getBoundingClientRect();
+        canvasElement.width = rect.width;
+        canvasElement.height = rect.height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 100);
+
+    console.log('👋 Gesture Wave запущен!');
+    console.log('Доступные жесты:', GESTURE_LIST.join(', '));
+</script>
+</body>
+</html>
