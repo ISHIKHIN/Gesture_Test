@@ -159,6 +159,7 @@
             height: 100%;
             object-fit: cover;
             display: block;
+            /* transform: scaleX(-1); — УБРАНО */
         }
 
         #output-canvas {
@@ -234,6 +235,7 @@
             justify-content: center;
             background: rgba(0, 0, 0, 0.3);
             padding: 20px;
+            position: relative;
         }
 
         .meme-image {
@@ -242,6 +244,7 @@
             object-fit: contain;
             border-radius: 12px;
             display: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
 
         .meme-image.active {
@@ -264,6 +267,37 @@
             text-align: center;
             color: #666;
             font-size: 13px;
+        }
+
+        .meme-loading {
+            display: none;
+            color: #3b82f6;
+            font-size: 13px;
+        }
+
+        .meme-loading.active {
+            display: block;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .meme-error {
+            display: none;
+            color: #ef4444;
+            font-size: 13px;
+        }
+
+        .meme-error.active {
+            display: block;
         }
 
         .info-strip {
@@ -616,7 +650,9 @@
                     <div class="glass-card meme-panel">
                         <div class="meme-header">РЕАКЦИЯ</div>
                         <div class="meme-stage">
-                            <div class="meme-placeholder" id="memePlaceholder">Ожидание жеста...</div>
+                            <div class="meme-placeholder" id="memePlaceholder">👀 Ожидание жеста...</div>
+                            <div class="meme-loading" id="memeLoading">⏳ Загрузка...</div>
+                            <div class="meme-error" id="memeError">❌ Не удалось загрузить</div>
                             <img id="memeImage" class="meme-image" alt="meme" />
                         </div>
                     </div>
@@ -842,11 +878,11 @@
 
 
         // ============================================================
-        //  2. РАСПОЗНАВАНИЕ ЖЕСТОВ
+        //  2. РАСПОЗНАВАНИЕ ЖЕСТОВ (из hand_tracker.py)
         // ============================================================
 
         const GESTURE_MEME_MAP = {
-            "Указывая вверх": "pic_finger_up.jpg",
+            "Указываю вверх": "pic_finger_up.jpg",
             "Большой палец вверх": "pic_thumb_up.jpg",
             "Мир": "pic_peace.jpg",
             "Мало": "fingers_little.jpeg",
@@ -860,6 +896,21 @@
         };
 
         const GESTURE_LIST = Object.keys(GESTURE_MEME_MAP);
+
+        // Эмодзи для fallback (если картинка не загрузилась)
+        const GESTURE_EMOJI = {
+            "Указываю вверх": "☝️",
+            "Большой палец вверх": "👍",
+            "Мир": "✌️",
+            "Мало": "🤏",
+            "Две ладони параллельно": "🤲",
+            "Я не знаю": "🤷",
+            "Открытая ладонь": "✋",
+            "Вишенка на торте": "🍒",
+            "Кулак": "✊",
+            "Рок": "🤘",
+            "OK": "👌"
+        };
 
         function calculateDistance(p1, p2) {
             return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
@@ -947,6 +998,7 @@
 
             const numHands = landmarks.length;
 
+            // ===== ДВЕ РУКИ =====
             if (numHands === 2) {
                 const hand1 = landmarks[0];
                 const hand2 = landmarks[1];
@@ -1003,6 +1055,7 @@
                 return { gesture: "Две руки", confidence: 0.7 };
             }
 
+            // ===== ОДНА РУКА =====
             if (numHands === 1) {
                 const hand = landmarks[0];
                 const handType = handedness?.[0]?.label || 'Right';
@@ -1027,7 +1080,7 @@
                 }
 
                 if (!fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
-                    return { gesture: "Указывая вверх", confidence: 0.92 };
+                    return { gesture: "Указываю вверх", confidence: 0.92 };
                 }
 
                 if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
@@ -1085,6 +1138,11 @@
         let fps = 0,
             frameCount = 0,
             lastFpsTime = Date.now();
+        let lastGesture = "";
+        let lastMemeLoad = "";
+
+        // --- Кэш для загруженных мемов ---
+        const memeCache = {};
 
         function updateUI(gesture, confidence, hands) {
             document.getElementById('gestureName').textContent = gesture;
@@ -1094,33 +1152,105 @@
 
             const img = document.getElementById('memeImage');
             const placeholder = document.getElementById('memePlaceholder');
-            const memeFile = GESTURE_MEME_MAP[gesture];
+            const loading = document.getElementById('memeLoading');
+            const error = document.getElementById('memeError');
 
-            if (memeFile && gesture !== "Нет рук" && gesture !== "Неизвестно" && gesture !== "Две руки" &&
-                gesture !== "Один палец" && gesture !== "Два пальца" && gesture !== "Три пальца" && gesture !== "Четыре пальца" &&
-                gesture !== "Только большой палец" && gesture !== "Только указательный") {
-                img.src = `images/${memeFile}?t=${Date.now()}`;
-                img.onload = function() {
-                    img.classList.add('active');
-                    placeholder.style.display = 'none';
-                };
-                img.onerror = function() {
-                    img.classList.remove('active');
-                    placeholder.style.display = 'flex';
-                    placeholder.textContent = 'Нет картинки для жеста';
-                };
-            } else {
+            // Скрываем все состояния
+            loading.classList.remove('active');
+            error.classList.remove('active');
+
+            const memeFile = GESTURE_MEME_MAP[gesture];
+            const isMainGesture = gesture && memeFile &&
+                gesture !== "Нет рук" && gesture !== "Неизвестно" &&
+                gesture !== "Две руки" &&
+                !gesture.includes("палец") &&
+                !gesture.includes("Один") &&
+                !gesture.includes("Два") &&
+                !gesture.includes("Три") &&
+                !gesture.includes("Четыре");
+
+            if (isMainGesture) {
+                // Показываем загрузку
+                loading.classList.add('active');
+                placeholder.style.display = 'none';
                 img.classList.remove('active');
+
+                // Проверяем кэш
+                if (memeCache[memeFile]) {
+                    img.src = memeCache[memeFile];
+                    img.classList.add('active');
+                    loading.classList.remove('active');
+                    placeholder.style.display = 'none';
+                    return;
+                }
+
+                // Пробуем загрузить картинку
+                const imgObj = new Image();
+                const paths = [
+                    `images/${memeFile}`,
+                    `static/images/${memeFile}`,
+                    `./images/${memeFile}`
+                ];
+
+                let loaded = false;
+
+                function tryLoad(index) {
+                    if (index >= paths.length || loaded) return;
+
+                    imgObj.onload = function() {
+                        loaded = true;
+                        memeCache[memeFile] = paths[index];
+                        img.src = paths[index];
+                        img.classList.add('active');
+                        loading.classList.remove('active');
+                        placeholder.style.display = 'none';
+                        error.classList.remove('active');
+                        console.log('✅ Мем загружен:', paths[index]);
+                    };
+
+                    imgObj.onerror = function() {
+                        console.log('❌ Не загрузился:', paths[index]);
+                        tryLoad(index + 1);
+                    };
+
+                    imgObj.src = paths[index];
+                }
+
+                tryLoad(0);
+
+                // Таймаут на случай долгой загрузки
+                setTimeout(() => {
+                    if (!loaded) {
+                        loading.classList.remove('active');
+                        // Показываем эмодзи как fallback
+                        const emoji = GESTURE_EMOJI[gesture] || '🎭';
+                        placeholder.textContent = emoji;
+                        placeholder.style.display = 'flex';
+                        img.classList.remove('active');
+                        console.log('⚠️ Мем не загружен, показываем эмодзи:', emoji);
+                    }
+                }, 3000);
+            } else {
+                // Не основной жест — показываем текст или эмодзи
+                img.classList.remove('active');
+                loading.classList.remove('active');
+                error.classList.remove('active');
                 placeholder.style.display = 'flex';
+
                 if (gesture === "Нет рук") {
-                    placeholder.textContent = 'Ожидание жеста...';
+                    placeholder.textContent = '👀 Ожидание жеста...';
                 } else if (gesture === "Две руки") {
-                    placeholder.textContent = 'Две руки (покажите жест)';
+                    placeholder.textContent = '🤝 Две руки (покажите жест)';
+                } else if (gesture === "Неизвестно") {
+                    placeholder.textContent = '❓ Неизвестный жест';
+                } else if (GESTURE_EMOJI[gesture]) {
+                    placeholder.textContent = GESTURE_EMOJI[gesture] + ' ' + gesture;
                 } else {
-                    placeholder.textContent = gesture || 'Неизвестный жест';
+                    placeholder.textContent = gesture || '—';
                 }
             }
 
+            // --- Обновление рук ---
             const handCount = hands ? hands.length : 0;
             document.getElementById('handCount').textContent = handCount;
 
@@ -1128,22 +1258,21 @@
             if (hands && hands.length > 0) {
                 handDiv.innerHTML = hands.map((h, i) =>
                     `<div class="hand-chip">
-                        <span>Рука ${i+1}: ${h.handedness || 'Неизвестно'}</span>
-                        <span>${Math.round((h.confidence || 0.5) * 100)}%</span>
-                    </div>`
+                            <span>Рука ${i+1}: ${h.handedness || 'Неизвестно'}</span>
+                            <span>${Math.round((h.confidence || 0.5) * 100)}%</span>
+                        </div>`
                 ).join('');
             } else {
                 handDiv.innerHTML = '<div style="color:#666;font-size:12px;margin-top:8px;">нет рук</div>';
             }
 
+            // Подсветка тегов
             document.querySelectorAll('.gesture-tag').forEach(tag => {
                 tag.classList.toggle('active', tag.textContent === gesture);
             });
         }
 
-        // ============================================================
-        //  ИСПРАВЛЕННАЯ ФУНКЦИЯ onResults (с зеркальным отображением)
-        // ============================================================
+        // --- Обработка результатов MediaPipe (БЕЗ зеркалирования) ---
         function onResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1157,13 +1286,9 @@
                     confidence: handedness[i]?.score || 0.5
                 }));
 
-                // Рисуем скелет с зеркальным отражением
+                // Рисуем скелет БЕЗ зеркалирования
                 for (let i = 0; i < landmarks.length; i++) {
                     const hand = landmarks[i];
-
-                    // ОТЗЕРКАЛИВАЕМ КООРДИНАТЫ: x = 1 - x
-                    const mirroredHand = hand;
-
                     const connections = [
                         [0, 1], [1, 2], [2, 3], [3, 4],
                         [0, 5], [5, 6], [6, 7], [7, 8],
@@ -1174,8 +1299,8 @@
                     ];
 
                     for (const [s, e] of connections) {
-                        const p1 = mirroredHand[s];
-                        const p2 = mirroredHand[e];
+                        const p1 = hand[s];
+                        const p2 = hand[e];
                         ctx.beginPath();
                         ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
                         ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
@@ -1184,7 +1309,7 @@
                         ctx.stroke();
                     }
 
-                    for (const p of mirroredHand) {
+                    for (const p of hand) {
                         ctx.beginPath();
                         ctx.arc(p.x * canvas.width, p.y * canvas.height, 4, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
@@ -1194,23 +1319,22 @@
                         ctx.stroke();
                     }
 
-                    // Подпись руки (тоже зеркально)
                     if (handedness[i]) {
                         const label = handedness[i].label;
-                        const wrist = mirroredHand[0];
+                        const wrist = hand[0];
                         ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
                         ctx.font = '14px Inter, sans-serif';
                         ctx.fillText(label, wrist.x * canvas.width - 20, wrist.y * canvas.height - 20);
                     }
                 }
 
-                // Распознаем жест (передаем оригинальные координаты, без зеркала)
                 const result = recognizeGesture(landmarks, handedness);
                 updateUI(result.gesture, result.confidence, hands);
             } else {
                 updateUI("Нет рук", 1.0, []);
             }
 
+            // FPS
             frameCount++;
             const now = Date.now();
             if (now - lastFpsTime > 1000) {
@@ -1261,8 +1385,8 @@
         window.addEventListener('resize', resizeCanvas);
         setTimeout(resizeCanvas, 200);
 
-        console.log('Gesture Wave запущен!');
-        console.log('Доступные жесты:', GESTURE_LIST.join(', '));
+        console.log('🚀 Gesture Wave запущен!');
+        console.log('📋 Доступные жесты:', GESTURE_LIST.join(', '));
     </script>
 
 </body>
