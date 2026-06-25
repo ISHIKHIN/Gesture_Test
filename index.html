@@ -159,7 +159,8 @@
             height: 100%;
             object-fit: cover;
             display: block;
-            /* БЕЗ ЗЕРКАЛА */
+            transform: scaleX(-1);
+            /* Зеркальное отображение как в оригинале */
         }
 
         #output-canvas {
@@ -1124,7 +1125,7 @@
 
 
         // ============================================================
-        //  3. MEDIAPIPE + UI (БЕЗ ЗЕРКАЛИРОВАНИЯ)
+        //  3. MEDIAPIPE + UI (С ЗЕРКАЛИРОВАНИЕМ КАК В ОРИГИНАЛЕ)
         // ============================================================
 
         const video = document.getElementById('video');
@@ -1242,7 +1243,7 @@
         }
 
         // ============================================================
-        //  onResults — БЕЗ ЗЕРКАЛИРОВАНИЯ
+        //  onResults — С ЗЕРКАЛИРОВАНИЕМ (как в оригинальном проекте)
         // ============================================================
         function onResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1257,10 +1258,14 @@
                     confidence: handedness[i]?.score || 0.5
                 }));
 
-                // Рисуем скелет БЕЗ зеркалирования
+                // Рисуем скелет С ЗЕРКАЛИРОВАНИЕМ (как в app.py с mirror_enabled=True)
                 for (let i = 0; i < landmarks.length; i++) {
                     const hand = landmarks[i];
-                    // ИСПОЛЬЗУЕМ ОРИГИНАЛЬНЫЕ КООРДИНАТЫ — НЕ ЗЕРКАЛИМ
+                    // ОТЗЕРКАЛИВАЕМ координаты по X, чтобы совпадало с зеркальным видео
+                    const mirroredHand = hand.map(p => ({
+                        x: 1 - p.x,
+                        y: p.y
+                    }));
 
                     const connections = [
                         [0, 1], [1, 2], [2, 3], [3, 4],
@@ -1272,8 +1277,8 @@
                     ];
 
                     for (const [s, e] of connections) {
-                        const p1 = hand[s];
-                        const p2 = hand[e];
+                        const p1 = mirroredHand[s];
+                        const p2 = mirroredHand[e];
                         ctx.beginPath();
                         ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
                         ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
@@ -1282,7 +1287,7 @@
                         ctx.stroke();
                     }
 
-                    for (const p of hand) {
+                    for (const p of mirroredHand) {
                         ctx.beginPath();
                         ctx.arc(p.x * canvas.width, p.y * canvas.height, 4, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
@@ -1294,13 +1299,14 @@
 
                     if (handedness[i]) {
                         const label = handedness[i].label;
-                        const wrist = hand[0];
+                        const wrist = mirroredHand[0];
                         ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
                         ctx.font = '14px Inter, sans-serif';
                         ctx.fillText(label, wrist.x * canvas.width - 20, wrist.y * canvas.height - 20);
                     }
                 }
 
+                // Распознаём жест на ОРИГИНАЛЬНЫХ (не зеркальных) координатах
                 const gesture = recognizeGesture(landmarks, handedness);
                 const confidence = hands.reduce((sum, h) => sum + h.confidence, 0) / hands.length || 0;
                 updateUI(gesture, confidence, hands);
