@@ -891,7 +891,7 @@
 
         // --- СООТВЕТСТВИЕ ЖЕСТОВ → МЕМЫ (как в app.py) ---
         const GESTURE_TO_MEME = {
-            "Указывая вверх": "pic_finger_up.jpg",
+            "Указываю вверх": "pic_finger_up.jpg",
             "Большой палец вверх": "pic_thumb_up.jpg",
             "Мир": "pic_peace.jpg",
             "Мало": "fingers_little.jpeg",
@@ -903,6 +903,9 @@
             "Рок": "rock.jpg",
             "OK": "ok.jpg"
         };
+
+        // --- СПИСОК ЖЕСТОВ ДЛЯ ТЕГОВ ---
+        const GESTURE_LIST = Object.keys(GESTURE_TO_MEME);
 
         // --- ЭМОДЗИ ДЛЯ FALLBACK ---
         const GESTURE_EMOJI = {
@@ -921,42 +924,32 @@
 
         // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (как в hand_tracker.py) ---
         function calculateDistance(p1, p2) {
-            // Используем x, y (нормализованные)
             return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
         }
 
         function getFingerStates(landmarks, handType) {
-            // fingers: [thumb, index, middle, ring, pinky]
             const fingers = [false, false, false, false, false];
 
-            // Большой палец (по горизонтали)
             if (handType === 'Right') {
                 fingers[0] = landmarks[4].x < landmarks[3].x;
             } else {
                 fingers[0] = landmarks[4].x > landmarks[3].x;
             }
 
-            // Остальные пальцы (по Y)
-            fingers[1] = landmarks[8].y < landmarks[6].y; // Указательный
-            fingers[2] = landmarks[12].y < landmarks[10].y; // Средний
-            fingers[3] = landmarks[16].y < landmarks[14].y; // Безымянный
-            fingers[4] = landmarks[20].y < landmarks[18].y; // Мизинец
+            fingers[1] = landmarks[8].y < landmarks[6].y;
+            fingers[2] = landmarks[12].y < landmarks[10].y;
+            fingers[3] = landmarks[16].y < landmarks[14].y;
+            fingers[4] = landmarks[20].y < landmarks[18].y;
 
             return fingers;
         }
 
-        function getFingerCount(landmarks, handType) {
-            const fingers = getFingerStates(landmarks, handType);
-            return fingers.filter(Boolean).length;
-        }
-
-        // --- is_cherry_gesture (как в hand_tracker.py) ---
         function isCherryGesture(landmarks, handType) {
             const points = landmarks;
             const thumbTip = points[4];
             const fingerTips = [8, 12, 16, 20];
             let closeFingers = 0;
-            const maxDistance = 0.08; // 55 пикселей в нормализованных координатах
+            const maxDistance = 0.08;
 
             for (const tipIdx of fingerTips) {
                 const dist = calculateDistance(thumbTip, points[tipIdx]);
@@ -969,7 +962,6 @@
                 return true;
             }
 
-            // Альтернативная проверка: все пальцы согнуты и близко к центру
             let centerX = 0,
                 centerY = 0;
             for (const tipIdx of fingerTips) {
@@ -997,7 +989,6 @@
                 }
             }
 
-            // Проверка на жест "щепотка"
             const indexDist = calculateDistance(points[8], thumbTip);
             const middleDist = calculateDistance(points[12], thumbTip);
             if (indexDist < 0.04 && middleDist < 0.05) {
@@ -1031,17 +1022,14 @@
                 const count1 = fingers1.filter(Boolean).length;
                 const count2 = fingers2.filter(Boolean).length;
 
-                // FIST (кулаки)
                 if (count1 === 0 || count2 === 0) {
                     return "Кулак";
                 }
 
-                // OPEN PALM (две открытые ладони)
                 if (count1 === 5 && count2 === 5) {
                     return "Открытая ладонь";
                 }
 
-                // TWO PALMS PARALLEL (две ладони параллельно)
                 const thumb1_x = hand1[4].x;
                 const thumb2_x = hand2[4].x;
                 const palm1_x = hand1[0].x;
@@ -1061,7 +1049,6 @@
                     }
                 }
 
-                // I DON'T KNOW (Я не знаю)
                 if (type1 === 'Left' && type2 === 'Right') {
                     if (thumb1_x < palm1_x && thumb2_x > palm2_x) {
                         if (count1 === 5 && count2 === 5) {
@@ -1088,17 +1075,14 @@
                 const fingers = getFingerStates(points, handType);
                 const fingerCount = fingers.filter(Boolean).length;
 
-                // FIST (кулак)
                 if (fingerCount === 0) {
                     return "Кулак";
                 }
 
-                // CHERRY (вишенка на торте)
                 if (isCherryGesture(points, handType)) {
                     return "Вишенка на торте";
                 }
 
-                // LITTLE (жест "мало")
                 if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     const dist = calculateDistance(points[4], points[8]);
                     if (dist < 0.08) {
@@ -1106,34 +1090,28 @@
                     }
                 }
 
-                // POINTING UP (указываю вверх)
                 if (!fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
-                    return "Указывая вверх";
+                    return "Указываю вверх";
                 }
 
-                // THUMBS UP (большой палец вверх)
                 if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     if (points[4].y < points[3].y) {
                         return "Большой палец вверх";
                     }
                 }
 
-                // PEACE / VICTORY (Мир)
                 if (!fingers[0] && fingers[1] && fingers[2] && !fingers[3] && !fingers[4]) {
                     return "Мир";
                 }
 
-                // OPEN PALM (открытая ладонь)
                 if (fingerCount === 5) {
                     return "Открытая ладонь";
                 }
 
-                // ROCK (Рок)
                 if (fingers[1] && !fingers[2] && !fingers[3] && fingers[4]) {
                     return "Рок";
                 }
 
-                // OK жест
                 if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     const dist = calculateDistance(points[4], points[8]);
                     if (dist < 0.04) {
@@ -1141,7 +1119,6 @@
                     }
                 }
 
-                // По умолчанию - показываем количество пальцев
                 if (fingerCount === 1) {
                     if (fingers[0]) return "Только большой палец";
                     if (fingers[1]) return "Только указательный";
@@ -1172,7 +1149,6 @@
         let fps = 0,
             frameCount = 0,
             lastFpsTime = Date.now();
-        let lastGesture = "";
         let memeCache = {};
         let loadingTimeout = null;
 
@@ -1186,14 +1162,14 @@
             img.classList.remove('active');
             loading.classList.remove('active');
 
+            // Проверяем, есть ли мем для этого жеста
+            // Используем ТОЧНО ТАКОЙ ЖЕ список, как в app.py
             const memeFile = GESTURE_TO_MEME[gesture];
             const emoji = GESTURE_EMOJI[gesture];
 
-            // Проверяем, есть ли мем для этого жеста
-            const hasMeme = memeFile && gesture !== "Нет рук" && gesture !== "Неизвестно" &&
-                gesture !== "Две руки" && !gesture.includes("палец") &&
-                !gesture.includes("Один") && !gesture.includes("Два") &&
-                !gesture.includes("Три") && !gesture.includes("Четыре");
+            // Показываем мем только для основных жестов (как в app.py)
+            const mainGestures = Object.keys(GESTURE_TO_MEME);
+            const hasMeme = mainGestures.includes(gesture);
 
             if (hasMeme && memeFile) {
                 // Показываем загрузку
@@ -1205,6 +1181,7 @@
                     img.src = memeCache[memeFile];
                     img.classList.add('active');
                     loading.classList.remove('active');
+                    console.log('✅ Мем из кэша:', memeFile);
                     return;
                 }
 
@@ -1249,8 +1226,9 @@
                         placeholder.style.display = 'flex';
                         placeholder.innerHTML = `<span class="emoji">${emoji || '🎭'}</span>
                                                 <span class="text">${gesture}</span>`;
+                        console.log('⚠️ Таймаут, показываем эмодзи:', gesture);
                     }
-                }, 2000);
+                }, 3000);
             } else {
                 // Показываем эмодзи или текст
                 img.classList.remove('active');
@@ -1281,7 +1259,7 @@
                 confidence > 0 ? `уверенность: ${Math.round(confidence * 100)}%` : 'ожидание...';
             document.getElementById('confidenceFill').style.width = `${confidence * 100}%`;
 
-            // Показываем мем
+            // Показываем мем (используем ТОТ ЖЕ жест)
             showMeme(gesture);
 
             // Обновляем руки
@@ -1304,8 +1282,6 @@
             document.querySelectorAll('.gesture-tag').forEach(tag => {
                 tag.classList.toggle('active', tag.textContent === gesture);
             });
-
-            lastGesture = gesture;
         }
 
         // --- Обработка результатов MediaPipe ---
@@ -1364,7 +1340,7 @@
                     }
                 }
 
-                // Распознаем жест (передаем тип руки)
+                // Распознаем жест
                 const gesture = recognizeGesture(landmarks, handedness);
                 const confidence = hands.reduce((sum, h) => sum + h.confidence, 0) / hands.length || 0;
                 updateUI(gesture, confidence, hands);
@@ -1405,10 +1381,9 @@
         });
         camera.start();
 
-        // --- Библиотека жестов ---
+        // --- Библиотека жестов (теги) ---
         const tagsContainer = document.getElementById('gestureTagsCloud');
-        const gestureList = Object.keys(GESTURE_TO_MEME);
-        gestureList.forEach(g => {
+        GESTURE_LIST.forEach(g => {
             const span = document.createElement('span');
             span.className = 'gesture-tag';
             span.textContent = g;
@@ -1425,7 +1400,7 @@
         setTimeout(resizeCanvas, 200);
 
         console.log('🚀 Gesture Wave запущен!');
-        console.log('📋 Доступные жесты:', gestureList.join(', '));
+        console.log('📋 Доступные жесты:', GESTURE_LIST.join(', '));
     </script>
 
 </body>
