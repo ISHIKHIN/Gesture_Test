@@ -159,7 +159,6 @@
             height: 100%;
             object-fit: cover;
             display: block;
-            transform: scaleX(-1);
         }
 
         #output-canvas {
@@ -763,7 +762,7 @@
 
     <script>
         // ============================================================
-        //  1. THREE.JS — 3D-ФОН
+        //  1. THREE.JS — 3D-ФОН (СЛЕГКА ЗАМЕДЛЕННАЯ АНИМАЦИЯ)
         // ============================================================
         (function init3D() {
             const container = document.getElementById('canvas-container');
@@ -871,6 +870,7 @@
             function animate() {
                 requestAnimationFrame(animate);
 
+                // Плавное замедленное движение (скорость 0.02 вместо 0.05)
                 currentRotX += (targetRotX - currentRotX) * 0.02;
                 currentRotY += (targetRotY - currentRotY) * 0.02;
 
@@ -1241,9 +1241,6 @@
             });
         }
 
-        // ============================================================
-        //  onResults — С ЗЕРКАЛИРОВАНИЕМ И ПРАВИЛЬНЫМИ НАДПИСЯМИ
-        // ============================================================
         function onResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1259,12 +1256,6 @@
 
                 for (let i = 0; i < landmarks.length; i++) {
                     const hand = landmarks[i];
-                    // ОТЗЕРКАЛИВАЕМ координаты по X
-                    const mirroredHand = hand.map(p => ({
-                        x: 1 - p.x,
-                        y: p.y
-                    }));
-
                     const connections = [
                         [0, 1], [1, 2], [2, 3], [3, 4],
                         [0, 5], [5, 6], [6, 7], [7, 8],
@@ -1275,8 +1266,8 @@
                     ];
 
                     for (const [s, e] of connections) {
-                        const p1 = mirroredHand[s];
-                        const p2 = mirroredHand[e];
+                        const p1 = hand[s];
+                        const p2 = hand[e];
                         ctx.beginPath();
                         ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
                         ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
@@ -1285,7 +1276,7 @@
                         ctx.stroke();
                     }
 
-                    for (const p of mirroredHand) {
+                    for (const p of hand) {
                         ctx.beginPath();
                         ctx.arc(p.x * canvas.width, p.y * canvas.height, 4, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
@@ -1295,24 +1286,15 @@
                         ctx.stroke();
                     }
 
-                    // ПОДПИСЬ: отзеркаливаем тип руки
                     if (handedness[i]) {
-                        let label = handedness[i].label;
-                        // Меняем Right ↔ Left для зеркального отображения
-                        if (label === 'Right') {
-                            label = 'Left';
-                        } else if (label === 'Left') {
-                            label = 'Right';
-                        }
-
-                        const wrist = mirroredHand[0];
+                        const label = handedness[i].label;
+                        const wrist = hand[0];
                         ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
                         ctx.font = '14px Inter, sans-serif';
                         ctx.fillText(label, wrist.x * canvas.width - 20, wrist.y * canvas.height - 20);
                     }
                 }
 
-                // Распознаём жест на ОРИГИНАЛЬНЫХ (не зеркальных) координатах
                 const gesture = recognizeGesture(landmarks, handedness);
                 const confidence = hands.reduce((sum, h) => sum + h.confidence, 0) / hands.length || 0;
                 updateUI(gesture, confidence, hands);
