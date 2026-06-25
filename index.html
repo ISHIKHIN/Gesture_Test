@@ -159,7 +159,6 @@
             height: 100%;
             object-fit: cover;
             display: block;
-            /* transform: scaleX(-1); — УБРАНО */
         }
 
         #output-canvas {
@@ -236,6 +235,8 @@
             background: rgba(0, 0, 0, 0.3);
             padding: 20px;
             position: relative;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .meme-image {
@@ -266,13 +267,25 @@
         .meme-placeholder {
             text-align: center;
             color: #666;
-            font-size: 13px;
+            font-size: 16px;
+            padding: 20px;
+        }
+
+        .meme-placeholder .emoji {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .meme-placeholder .text {
+            font-size: 14px;
+            color: #888;
         }
 
         .meme-loading {
             display: none;
             color: #3b82f6;
-            font-size: 13px;
+            font-size: 14px;
         }
 
         .meme-loading.active {
@@ -288,16 +301,6 @@
             50% {
                 opacity: 0.3;
             }
-        }
-
-        .meme-error {
-            display: none;
-            color: #ef4444;
-            font-size: 13px;
-        }
-
-        .meme-error.active {
-            display: block;
         }
 
         .info-strip {
@@ -603,7 +606,10 @@
                 min-height: 200px;
             }
             .meme-image {
-                max-height: 180px;
+                max-height: 150px;
+            }
+            .meme-placeholder .emoji {
+                font-size: 32px;
             }
         }
 
@@ -650,9 +656,11 @@
                     <div class="glass-card meme-panel">
                         <div class="meme-header">РЕАКЦИЯ</div>
                         <div class="meme-stage">
-                            <div class="meme-placeholder" id="memePlaceholder">👀 Ожидание жеста...</div>
+                            <div class="meme-placeholder" id="memePlaceholder">
+                                <span class="emoji">👀</span>
+                                <span class="text">Ожидание жеста...</span>
+                            </div>
                             <div class="meme-loading" id="memeLoading">⏳ Загрузка...</div>
-                            <div class="meme-error" id="memeError">❌ Не удалось загрузить</div>
                             <img id="memeImage" class="meme-image" alt="meme" />
                         </div>
                     </div>
@@ -878,11 +886,12 @@
 
 
         // ============================================================
-        //  2. РАСПОЗНАВАНИЕ ЖЕСТОВ (из hand_tracker.py)
+        //  2. РАСПОЗНАВАНИЕ ЖЕСТОВ (ТОЧНАЯ КОПИЯ ИЗ hand_tracker.py)
         // ============================================================
 
-        const GESTURE_MEME_MAP = {
-            "Указываю вверх": "pic_finger_up.jpg",
+        // --- СООТВЕТСТВИЕ ЖЕСТОВ → МЕМЫ (как в app.py) ---
+        const GESTURE_TO_MEME = {
+            "Указывая вверх": "pic_finger_up.jpg",
             "Большой палец вверх": "pic_thumb_up.jpg",
             "Мир": "pic_peace.jpg",
             "Мало": "fingers_little.jpeg",
@@ -895,50 +904,59 @@
             "OK": "ok.jpg"
         };
 
-        const GESTURE_LIST = Object.keys(GESTURE_MEME_MAP);
-
-        // Эмодзи для fallback (если картинка не загрузилась)
+        // --- ЭМОДЗИ ДЛЯ FALLBACK ---
         const GESTURE_EMOJI = {
             "Указываю вверх": "☝️",
             "Большой палец вверх": "👍",
             "Мир": "✌️",
             "Мало": "🤏",
+            "Кулак": "✊",
             "Две ладони параллельно": "🤲",
             "Я не знаю": "🤷",
             "Открытая ладонь": "✋",
             "Вишенка на торте": "🍒",
-            "Кулак": "✊",
             "Рок": "🤘",
             "OK": "👌"
         };
 
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (как в hand_tracker.py) ---
         function calculateDistance(p1, p2) {
+            // Используем x, y (нормализованные)
             return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
         }
 
         function getFingerStates(landmarks, handType) {
+            // fingers: [thumb, index, middle, ring, pinky]
             const fingers = [false, false, false, false, false];
 
+            // Большой палец (по горизонтали)
             if (handType === 'Right') {
                 fingers[0] = landmarks[4].x < landmarks[3].x;
             } else {
                 fingers[0] = landmarks[4].x > landmarks[3].x;
             }
 
-            fingers[1] = landmarks[8].y < landmarks[6].y;
-            fingers[2] = landmarks[12].y < landmarks[10].y;
-            fingers[3] = landmarks[16].y < landmarks[14].y;
-            fingers[4] = landmarks[20].y < landmarks[18].y;
+            // Остальные пальцы (по Y)
+            fingers[1] = landmarks[8].y < landmarks[6].y; // Указательный
+            fingers[2] = landmarks[12].y < landmarks[10].y; // Средний
+            fingers[3] = landmarks[16].y < landmarks[14].y; // Безымянный
+            fingers[4] = landmarks[20].y < landmarks[18].y; // Мизинец
 
             return fingers;
         }
 
+        function getFingerCount(landmarks, handType) {
+            const fingers = getFingerStates(landmarks, handType);
+            return fingers.filter(Boolean).length;
+        }
+
+        // --- is_cherry_gesture (как в hand_tracker.py) ---
         function isCherryGesture(landmarks, handType) {
             const points = landmarks;
             const thumbTip = points[4];
             const fingerTips = [8, 12, 16, 20];
             let closeFingers = 0;
-            const maxDistance = 0.08;
+            const maxDistance = 0.08; // 55 пикселей в нормализованных координатах
 
             for (const tipIdx of fingerTips) {
                 const dist = calculateDistance(thumbTip, points[tipIdx]);
@@ -951,6 +969,7 @@
                 return true;
             }
 
+            // Альтернативная проверка: все пальцы согнуты и близко к центру
             let centerX = 0,
                 centerY = 0;
             for (const tipIdx of fingerTips) {
@@ -978,6 +997,7 @@
                 }
             }
 
+            // Проверка на жест "щепотка"
             const indexDist = calculateDistance(points[8], thumbTip);
             const middleDist = calculateDistance(points[12], thumbTip);
             if (indexDist < 0.04 && middleDist < 0.05) {
@@ -991,14 +1011,15 @@
             return false;
         }
 
+        // --- ГЛАВНАЯ ФУНКЦИЯ recognize_gesture (ТОЧНАЯ КОПИЯ) ---
         function recognizeGesture(landmarks, handedness) {
             if (!landmarks || landmarks.length === 0) {
-                return { gesture: "Нет рук", confidence: 1.0 };
+                return "Нет рук";
             }
 
             const numHands = landmarks.length;
 
-            // ===== ДВЕ РУКИ =====
+            // ========== ЖЕСТЫ С ДВУМЯ РУКАМИ ==========
             if (numHands === 2) {
                 const hand1 = landmarks[0];
                 const hand2 = landmarks[1];
@@ -1007,18 +1028,20 @@
 
                 const fingers1 = getFingerStates(hand1, type1);
                 const fingers2 = getFingerStates(hand2, type2);
-
                 const count1 = fingers1.filter(Boolean).length;
                 const count2 = fingers2.filter(Boolean).length;
 
+                // FIST (кулаки)
                 if (count1 === 0 || count2 === 0) {
-                    return { gesture: "Кулак", confidence: 0.95 };
+                    return "Кулак";
                 }
 
+                // OPEN PALM (две открытые ладони)
                 if (count1 === 5 && count2 === 5) {
-                    return { gesture: "Открытая ладонь", confidence: 0.9 };
+                    return "Открытая ладонь";
                 }
 
+                // TWO PALMS PARALLEL (две ладони параллельно)
                 const thumb1_x = hand1[4].x;
                 const thumb2_x = hand2[4].x;
                 const palm1_x = hand1[0].x;
@@ -1027,35 +1050,36 @@
                 if (type1 === 'Left' && type2 === 'Right') {
                     if (thumb1_x > palm1_x && thumb2_x < palm2_x) {
                         if (count1 === 5 && count2 === 5) {
-                            return { gesture: "Две ладони параллельно", confidence: 0.95 };
+                            return "Две ладони параллельно";
                         }
                     }
                 } else if (type1 === 'Right' && type2 === 'Left') {
                     if (thumb1_x < palm1_x && thumb2_x > palm2_x) {
                         if (count1 === 5 && count2 === 5) {
-                            return { gesture: "Две ладони параллельно", confidence: 0.95 };
+                            return "Две ладони параллельно";
                         }
                     }
                 }
 
+                // I DON'T KNOW (Я не знаю)
                 if (type1 === 'Left' && type2 === 'Right') {
                     if (thumb1_x < palm1_x && thumb2_x > palm2_x) {
                         if (count1 === 5 && count2 === 5) {
-                            return { gesture: "Я не знаю", confidence: 0.85 };
+                            return "Я не знаю";
                         }
                     }
                 } else if (type1 === 'Right' && type2 === 'Left') {
                     if (thumb1_x > palm1_x && thumb2_x < palm2_x) {
                         if (count1 === 5 && count2 === 5) {
-                            return { gesture: "Я не знаю", confidence: 0.85 };
+                            return "Я не знаю";
                         }
                     }
                 }
 
-                return { gesture: "Две руки", confidence: 0.7 };
+                return "Две руки";
             }
 
-            // ===== ОДНА РУКА =====
+            // ========== ЖЕСТЫ С ОДНОЙ РУКОЙ ==========
             if (numHands === 1) {
                 const hand = landmarks[0];
                 const handType = handedness?.[0]?.label || 'Right';
@@ -1064,66 +1088,76 @@
                 const fingers = getFingerStates(points, handType);
                 const fingerCount = fingers.filter(Boolean).length;
 
+                // FIST (кулак)
                 if (fingerCount === 0) {
-                    return { gesture: "Кулак", confidence: 0.95 };
+                    return "Кулак";
                 }
 
+                // CHERRY (вишенка на торте)
                 if (isCherryGesture(points, handType)) {
-                    return { gesture: "Вишенка на торте", confidence: 0.9 };
+                    return "Вишенка на торте";
                 }
 
+                // LITTLE (жест "мало")
                 if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     const dist = calculateDistance(points[4], points[8]);
                     if (dist < 0.08) {
-                        return { gesture: "Мало", confidence: 0.92 };
+                        return "Мало";
                     }
                 }
 
+                // POINTING UP (указываю вверх)
                 if (!fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
-                    return { gesture: "Указываю вверх", confidence: 0.92 };
+                    return "Указывая вверх";
                 }
 
+                // THUMBS UP (большой палец вверх)
                 if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     if (points[4].y < points[3].y) {
-                        return { gesture: "Большой палец вверх", confidence: 0.95 };
+                        return "Большой палец вверх";
                     }
                 }
 
+                // PEACE / VICTORY (Мир)
                 if (!fingers[0] && fingers[1] && fingers[2] && !fingers[3] && !fingers[4]) {
-                    return { gesture: "Мир", confidence: 0.95 };
+                    return "Мир";
                 }
 
+                // OPEN PALM (открытая ладонь)
                 if (fingerCount === 5) {
-                    return { gesture: "Открытая ладонь", confidence: 0.95 };
+                    return "Открытая ладонь";
                 }
 
+                // ROCK (Рок)
                 if (fingers[1] && !fingers[2] && !fingers[3] && fingers[4]) {
-                    return { gesture: "Рок", confidence: 0.88 };
+                    return "Рок";
                 }
 
+                // OK жест
                 if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                     const dist = calculateDistance(points[4], points[8]);
                     if (dist < 0.04) {
-                        return { gesture: "OK", confidence: 0.92 };
+                        return "OK";
                     }
                 }
 
+                // По умолчанию - показываем количество пальцев
                 if (fingerCount === 1) {
-                    if (fingers[0]) return { gesture: "Только большой палец", confidence: 0.5 };
-                    if (fingers[1]) return { gesture: "Только указательный", confidence: 0.5 };
-                    return { gesture: "Один палец", confidence: 0.5 };
+                    if (fingers[0]) return "Только большой палец";
+                    if (fingers[1]) return "Только указательный";
+                    return "Один палец";
                 } else if (fingerCount === 2) {
-                    return { gesture: "Два пальца", confidence: 0.5 };
+                    return "Два пальца";
                 } else if (fingerCount === 3) {
-                    return { gesture: "Три пальца", confidence: 0.5 };
+                    return "Три пальца";
                 } else if (fingerCount === 4) {
-                    return { gesture: "Четыре пальца", confidence: 0.5 };
+                    return "Четыре пальца";
+                } else {
+                    return `${fingerCount} Палец(ев)`;
                 }
-
-                return { gesture: "Неизвестно", confidence: 0.3 };
             }
 
-            return { gesture: "Неизвестно", confidence: 0.3 };
+            return "Неизвестно";
         }
 
 
@@ -1139,52 +1173,42 @@
             frameCount = 0,
             lastFpsTime = Date.now();
         let lastGesture = "";
-        let lastMemeLoad = "";
+        let memeCache = {};
+        let loadingTimeout = null;
 
-        // --- Кэш для загруженных мемов ---
-        const memeCache = {};
-
-        function updateUI(gesture, confidence, hands) {
-            document.getElementById('gestureName').textContent = gesture;
-            document.getElementById('gestureConfidence').textContent =
-                confidence > 0 ? `уверенность: ${Math.round(confidence * 100)}%` : 'ожидание...';
-            document.getElementById('confidenceFill').style.width = `${confidence * 100}%`;
-
+        // --- Функция показа мема ---
+        function showMeme(gesture) {
             const img = document.getElementById('memeImage');
             const placeholder = document.getElementById('memePlaceholder');
             const loading = document.getElementById('memeLoading');
-            const error = document.getElementById('memeError');
 
-            // Скрываем все состояния
+            // Скрываем всё
+            img.classList.remove('active');
             loading.classList.remove('active');
-            error.classList.remove('active');
 
-            const memeFile = GESTURE_MEME_MAP[gesture];
-            const isMainGesture = gesture && memeFile &&
-                gesture !== "Нет рук" && gesture !== "Неизвестно" &&
-                gesture !== "Две руки" &&
-                !gesture.includes("палец") &&
-                !gesture.includes("Один") &&
-                !gesture.includes("Два") &&
-                !gesture.includes("Три") &&
-                !gesture.includes("Четыре");
+            const memeFile = GESTURE_TO_MEME[gesture];
+            const emoji = GESTURE_EMOJI[gesture];
 
-            if (isMainGesture) {
+            // Проверяем, есть ли мем для этого жеста
+            const hasMeme = memeFile && gesture !== "Нет рук" && gesture !== "Неизвестно" &&
+                gesture !== "Две руки" && !gesture.includes("палец") &&
+                !gesture.includes("Один") && !gesture.includes("Два") &&
+                !gesture.includes("Три") && !gesture.includes("Четыре");
+
+            if (hasMeme && memeFile) {
                 // Показываем загрузку
                 loading.classList.add('active');
                 placeholder.style.display = 'none';
-                img.classList.remove('active');
 
                 // Проверяем кэш
                 if (memeCache[memeFile]) {
                     img.src = memeCache[memeFile];
                     img.classList.add('active');
                     loading.classList.remove('active');
-                    placeholder.style.display = 'none';
                     return;
                 }
 
-                // Пробуем загрузить картинку
+                // Пробуем загрузить
                 const imgObj = new Image();
                 const paths = [
                     `images/${memeFile}`,
@@ -1204,7 +1228,6 @@
                         img.classList.add('active');
                         loading.classList.remove('active');
                         placeholder.style.display = 'none';
-                        error.classList.remove('active');
                         console.log('✅ Мем загружен:', paths[index]);
                     };
 
@@ -1218,39 +1241,50 @@
 
                 tryLoad(0);
 
-                // Таймаут на случай долгой загрузки
-                setTimeout(() => {
+                // Таймаут
+                if (loadingTimeout) clearTimeout(loadingTimeout);
+                loadingTimeout = setTimeout(() => {
                     if (!loaded) {
                         loading.classList.remove('active');
-                        // Показываем эмодзи как fallback
-                        const emoji = GESTURE_EMOJI[gesture] || '🎭';
-                        placeholder.textContent = emoji;
                         placeholder.style.display = 'flex';
-                        img.classList.remove('active');
-                        console.log('⚠️ Мем не загружен, показываем эмодзи:', emoji);
+                        placeholder.innerHTML = `<span class="emoji">${emoji || '🎭'}</span>
+                                                <span class="text">${gesture}</span>`;
                     }
-                }, 3000);
+                }, 2000);
             } else {
-                // Не основной жест — показываем текст или эмодзи
+                // Показываем эмодзи или текст
                 img.classList.remove('active');
                 loading.classList.remove('active');
-                error.classList.remove('active');
                 placeholder.style.display = 'flex';
 
                 if (gesture === "Нет рук") {
-                    placeholder.textContent = '👀 Ожидание жеста...';
+                    placeholder.innerHTML = `<span class="emoji">👀</span>
+                                            <span class="text">Ожидание жеста...</span>`;
                 } else if (gesture === "Две руки") {
-                    placeholder.textContent = '🤝 Две руки (покажите жест)';
-                } else if (gesture === "Неизвестно") {
-                    placeholder.textContent = '❓ Неизвестный жест';
-                } else if (GESTURE_EMOJI[gesture]) {
-                    placeholder.textContent = GESTURE_EMOJI[gesture] + ' ' + gesture;
+                    placeholder.innerHTML = `<span class="emoji">🤝</span>
+                                            <span class="text">Две руки (покажите жест)</span>`;
+                } else if (emoji) {
+                    placeholder.innerHTML = `<span class="emoji">${emoji}</span>
+                                            <span class="text">${gesture}</span>`;
                 } else {
-                    placeholder.textContent = gesture || '—';
+                    placeholder.innerHTML = `<span class="emoji">🤔</span>
+                                            <span class="text">${gesture || 'Неизвестный жест'}</span>`;
                 }
             }
+        }
 
-            // --- Обновление рук ---
+        // --- Обновление UI ---
+        function updateUI(gesture, confidence, hands) {
+            // Обновляем имя жеста
+            document.getElementById('gestureName').textContent = gesture;
+            document.getElementById('gestureConfidence').textContent =
+                confidence > 0 ? `уверенность: ${Math.round(confidence * 100)}%` : 'ожидание...';
+            document.getElementById('confidenceFill').style.width = `${confidence * 100}%`;
+
+            // Показываем мем
+            showMeme(gesture);
+
+            // Обновляем руки
             const handCount = hands ? hands.length : 0;
             document.getElementById('handCount').textContent = handCount;
 
@@ -1258,9 +1292,9 @@
             if (hands && hands.length > 0) {
                 handDiv.innerHTML = hands.map((h, i) =>
                     `<div class="hand-chip">
-                            <span>Рука ${i+1}: ${h.handedness || 'Неизвестно'}</span>
-                            <span>${Math.round((h.confidence || 0.5) * 100)}%</span>
-                        </div>`
+                        <span>Рука ${i+1}: ${h.handedness || 'Неизвестно'}</span>
+                        <span>${Math.round((h.confidence || 0.5) * 100)}%</span>
+                    </div>`
                 ).join('');
             } else {
                 handDiv.innerHTML = '<div style="color:#666;font-size:12px;margin-top:8px;">нет рук</div>';
@@ -1270,9 +1304,11 @@
             document.querySelectorAll('.gesture-tag').forEach(tag => {
                 tag.classList.toggle('active', tag.textContent === gesture);
             });
+
+            lastGesture = gesture;
         }
 
-        // --- Обработка результатов MediaPipe (БЕЗ зеркалирования) ---
+        // --- Обработка результатов MediaPipe ---
         function onResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1286,7 +1322,7 @@
                     confidence: handedness[i]?.score || 0.5
                 }));
 
-                // Рисуем скелет БЕЗ зеркалирования
+                // Рисуем скелет
                 for (let i = 0; i < landmarks.length; i++) {
                     const hand = landmarks[i];
                     const connections = [
@@ -1328,8 +1364,10 @@
                     }
                 }
 
-                const result = recognizeGesture(landmarks, handedness);
-                updateUI(result.gesture, result.confidence, hands);
+                // Распознаем жест (передаем тип руки)
+                const gesture = recognizeGesture(landmarks, handedness);
+                const confidence = hands.reduce((sum, h) => sum + h.confidence, 0) / hands.length || 0;
+                updateUI(gesture, confidence, hands);
             } else {
                 updateUI("Нет рук", 1.0, []);
             }
@@ -1369,7 +1407,8 @@
 
         // --- Библиотека жестов ---
         const tagsContainer = document.getElementById('gestureTagsCloud');
-        GESTURE_LIST.forEach(g => {
+        const gestureList = Object.keys(GESTURE_TO_MEME);
+        gestureList.forEach(g => {
             const span = document.createElement('span');
             span.className = 'gesture-tag';
             span.textContent = g;
@@ -1386,7 +1425,7 @@
         setTimeout(resizeCanvas, 200);
 
         console.log('🚀 Gesture Wave запущен!');
-        console.log('📋 Доступные жесты:', GESTURE_LIST.join(', '));
+        console.log('📋 Доступные жесты:', gestureList.join(', '));
     </script>
 
 </body>
