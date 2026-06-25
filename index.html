@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Gesture Wave | 3D + Распознавание жестов</title>
+    <title>Gesture Wave | Распознавание жестов</title>
 
     <!-- Шрифты -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -37,7 +37,6 @@
             position: relative;
         }
 
-        /* 3D-фон - как в оригинале */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -81,7 +80,6 @@
             }
         }
 
-        /* ===== ШАПКА ===== */
         .header {
             margin-bottom: 60px;
             display: flex;
@@ -138,7 +136,6 @@
             }
         }
 
-        /* ===== СТЕКЛЯННЫЕ КАРТОЧКИ ===== */
         .glass-card {
             background: rgba(15, 15, 25, 0.7);
             backdrop-filter: blur(12px);
@@ -154,7 +151,6 @@
             margin-bottom: 24px;
         }
 
-        /* ===== ВИДЕО ===== */
         .video-wrapper {
             position: relative;
             aspect-ratio: 4/3;
@@ -168,7 +164,6 @@
             object-fit: cover;
             display: block;
             transform: scaleX(-1);
-            /* Убираем зеркальность */
         }
 
         #output-canvas {
@@ -221,7 +216,6 @@
             transition: width 0.2s;
         }
 
-        /* ===== ПАНЕЛЬ МЕМОВ ===== */
         .meme-panel {
             display: flex;
             flex-direction: column;
@@ -277,7 +271,6 @@
             font-size: 13px;
         }
 
-        /* ===== СТАТИСТИКА ===== */
         .info-strip {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -372,7 +365,6 @@
             border-color: #3b82f6;
         }
 
-        /* ===== ЛЕНДИНГ ===== */
         .landing-hero {
             text-align: center;
             margin: 80px 0 80px;
@@ -552,7 +544,6 @@
             transform: translateY(-2px);
         }
 
-        /* ===== АДАПТИВНОСТЬ ===== */
         @media (max-width: 1024px) {
             .features-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -600,7 +591,6 @@
     <div class="page-wrapper">
         <div class="container content-main">
 
-            <!-- ШАПКА -->
             <div class="header">
                 <div class="title-group">
                     <h1>Gesture Wave</h1>
@@ -611,11 +601,9 @@
                 </div>
             </div>
 
-            <!-- ОСНОВНОЙ КОНТЕНТ -->
             <div id="appContent">
                 <div class="dashboard-grid">
 
-                    <!-- ВИДЕО -->
                     <div class="glass-card">
                         <div class="video-wrapper">
                             <video id="video" autoplay playsinline></video>
@@ -631,17 +619,15 @@
                         </div>
                     </div>
 
-                    <!-- МЕМЫ -->
                     <div class="glass-card meme-panel">
                         <div class="meme-header">РЕАКЦИЯ</div>
                         <div class="meme-stage">
-                            <div class="meme-placeholder" id="memePlaceholder">👀 Ожидание жеста...</div>
+                            <div class="meme-placeholder" id="memePlaceholder">Ожидание жеста...</div>
                             <img id="memeImage" class="meme-image" alt="meme" />
                         </div>
                     </div>
                 </div>
 
-                <!-- СТАТИСТИКА -->
                 <div class="info-strip">
                     <div class="stat-block">
                         <div class="stat-label">АКТИВНЫЙ ЖЕСТ</div>
@@ -663,7 +649,6 @@
                 </div>
             </div>
 
-            <!-- ЛЕНДИНГ -->
             <div id="landingContent">
                 <div class="landing-hero">
                     <h1>Gesture Wave</h1>
@@ -678,7 +663,7 @@
                         </div>
                         <div class="feature-content">
                             <div class="feature-tag">MediaPipe</div>
-                            <p>Обнаружение 21-точечных ориентиров на руке в реальном времени с точностью до долей миллиметра и сверхнизкой задержкой обработки.</p>
+                            <p>Обнаружение 21-точечных ориентиров на руке в реальном времени с точностью до долей миллиметра.</p>
                             <div class="feature-stats">
                                 <div class="stat-item">
                                     <div class="stat-number">21</div>
@@ -699,13 +684,7 @@
                         </div>
                         <div class="feature-content">
                             <div class="feature-tag">10+ жестов</div>
-                            <p>Система распознавания на основе математических операций, определяющая множество жестов с высокой степенью достоверности.</p>
-                            <div class="feature-stats">
-                                <div class="stat-item">
-                                    <div class="stat-number">95+</div>
-                                    <div class="stat-desc">% точность</div>
-                                </div>
-                            </div>
+                            <p>Система распознавания на основе математических операций, определяющая множество жестов с высокой точностью.</p>
                         </div>
                     </div>
 
@@ -716,7 +695,7 @@
                         </div>
                         <div class="feature-content">
                             <div class="feature-tag">Интерактивное</div>
-                            <p>Мгновенная визуальная реакция на Ваши жесты. Динамический контент, реагирующий на Ваши движения в режиме реального времени.</p>
+                            <p>Мгновенная визуальная реакция на ваши жесты в реальном времени.</p>
                         </div>
                     </div>
                 </div>
@@ -727,22 +706,22 @@
                         <div class="gesture-category">
                             <div class="category-name">Одна рука</div>
                             <div class="gesture-items">
-                                <span class="gesture-chip">☝️ Указываю вверх</span>
-                                <span class="gesture-chip">👍 Большой палец вверх</span>
-                                <span class="gesture-chip">✌️ Мир</span>
-                                <span class="gesture-chip">🤏 Мало</span>
-                                <span class="gesture-chip">✋ Открытая ладонь</span>
-                                <span class="gesture-chip">✊ Кулак</span>
-                                <span class="gesture-chip">🍒 Вишенка</span>
-                                <span class="gesture-chip">🤘 Рок</span>
-                                <span class="gesture-chip">👌 OK</span>
+                                <span class="gesture-chip">Указываю вверх</span>
+                                <span class="gesture-chip">Большой палец вверх</span>
+                                <span class="gesture-chip">Мир</span>
+                                <span class="gesture-chip">Мало</span>
+                                <span class="gesture-chip">Открытая ладонь</span>
+                                <span class="gesture-chip">Кулак</span>
+                                <span class="gesture-chip">Вишенка</span>
+                                <span class="gesture-chip">Рок</span>
+                                <span class="gesture-chip">OK</span>
                             </div>
                         </div>
                         <div class="gesture-category">
                             <div class="category-name">Две руки</div>
                             <div class="gesture-items">
-                                <span class="gesture-chip">✋✋ Две ладони</span>
-                                <span class="gesture-chip">🤷 Я не знаю</span>
+                                <span class="gesture-chip">Две ладони</span>
+                                <span class="gesture-chip">Я не знаю</span>
                             </div>
                         </div>
                     </div>
@@ -755,32 +734,26 @@
 
     <script>
         // ============================================================
-        //  1. THREE.JS — 3D-ФОН (ТОЧНО КАК В ОРИГИНАЛЕ)
+        //  1. THREE.JS — 3D-ФОН
         // ============================================================
         (function init3D() {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({
-                alpha: true,
-                antialias: true
-            });
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setClearColor(0x000000, 0);
             container.appendChild(renderer.domElement);
 
-            // --- Мелкие звёзды (2000) ---
             const starsCount = 2000;
             const starsGeo = new THREE.BufferGeometry();
             const starsPos = new Float32Array(starsCount * 3);
             const starsCol = new Float32Array(starsCount * 3);
-
             for (let i = 0; i < starsCount; i++) {
                 starsPos[i * 3] = (Math.random() - 0.5) * 2000;
                 starsPos[i * 3 + 1] = (Math.random() - 0.5) * 1000;
                 starsPos[i * 3 + 2] = (Math.random() - 0.5) * 500 - 150;
-
                 const t = Math.random();
                 if (t < 0.5) {
                     starsCol[i * 3] = 0.5 + Math.random() * 0.5;
@@ -796,10 +769,8 @@
                     starsCol[i * 3 + 2] = 1.0;
                 }
             }
-
             starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
             starsGeo.setAttribute('color', new THREE.BufferAttribute(starsCol, 3));
-
             const starsMat = new THREE.PointsMaterial({
                 size: 1.8,
                 vertexColors: true,
@@ -808,21 +779,17 @@
                 blending: THREE.AdditiveBlending,
                 depthWrite: false
             });
-
             const stars = new THREE.Points(starsGeo, starsMat);
             scene.add(stars);
 
-            // --- Крупные звёзды (400) ---
             const bigCount = 400;
             const bigGeo = new THREE.BufferGeometry();
             const bigPos = new Float32Array(bigCount * 3);
             const bigCol = new Float32Array(bigCount * 3);
-
             for (let i = 0; i < bigCount; i++) {
                 bigPos[i * 3] = (Math.random() - 0.5) * 1800;
                 bigPos[i * 3 + 1] = (Math.random() - 0.5) * 900;
                 bigPos[i * 3 + 2] = (Math.random() - 0.5) * 400 - 100;
-
                 const isBlue = Math.random() > 0.6;
                 if (isBlue) {
                     bigCol[i * 3] = 0.5 + Math.random() * 0.5;
@@ -834,10 +801,8 @@
                     bigCol[i * 3 + 2] = 1.0;
                 }
             }
-
             bigGeo.setAttribute('position', new THREE.BufferAttribute(bigPos, 3));
             bigGeo.setAttribute('color', new THREE.BufferAttribute(bigCol, 3));
-
             const bigMat = new THREE.PointsMaterial({
                 size: 1.0,
                 vertexColors: true,
@@ -846,7 +811,6 @@
                 blending: THREE.AdditiveBlending,
                 depthWrite: false
             });
-
             const bigStars = new THREE.Points(bigGeo, bigMat);
             scene.add(bigStars);
 
@@ -854,12 +818,10 @@
 
             let mouseX = 0,
                 mouseY = 0;
-
             document.addEventListener('mousemove', (e) => {
                 mouseX = (e.clientX / window.innerWidth) * 2 - 1;
                 mouseY = (e.clientY / window.innerHeight) * 2 - 1;
             });
-
             document.addEventListener('touchmove', (e) => {
                 if (e.touches.length > 0) {
                     mouseX = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
@@ -869,12 +831,10 @@
 
             function animate() {
                 requestAnimationFrame(animate);
-
                 stars.rotation.y += (mouseX * 0.15 - stars.rotation.y) * 0.05;
                 stars.rotation.x += (mouseY * 0.1 - stars.rotation.x) * 0.05;
                 bigStars.rotation.y += (mouseX * 0.12 - bigStars.rotation.y) * 0.05;
                 bigStars.rotation.x += (mouseY * 0.08 - bigStars.rotation.x) * 0.05;
-
                 renderer.render(scene, camera);
             }
             animate();
@@ -888,55 +848,113 @@
 
 
         // ============================================================
-        //  2. РАСПОЗНАВАНИЕ ЖЕСТОВ (МАТЕМАТИКА ИЗ ОРИГИНАЛА)
+        //  2. РАСПОЗНАВАНИЕ ЖЕСТОВ (ТОЧНО КАК В hand_tracker.py)
         // ============================================================
 
-        // Соответствие жестов → файлы мемов
+        // Маппинг жестов → файлы мемов (как в GESTURE_TO_MEME)
         const GESTURE_MEME_MAP = {
-            "Указываю вверх": "pic_finger_up.jpg",
+            "Указывая вверх": "pic_finger_up.jpg",
             "Большой палец вверх": "pic_thumb_up.jpg",
             "Мир": "pic_peace.jpg",
             "Мало": "fingers_little.jpeg",
-            "Две ладони": "2_hands_infrontofeachother.jpg",
+            "Кулак": "fist.jpg",
+            "Две ладони параллельно": "2_hands_infrontofeachother.jpg",
             "Я не знаю": "i_dont_know.jpg",
             "Открытая ладонь": "open_palm.jpg",
-            "Вишенка": "cherry_pic.jpg",
-            "Кулак": "fist.jpg",
+            "Вишенка на торте": "cherry_pic.jpg",
             "Рок": "rock.jpg",
             "OK": "ok.jpg"
         };
 
         const GESTURE_LIST = Object.keys(GESTURE_MEME_MAP);
 
-        // --- Вспомогательные функции (как в hand_tracker.py) ---
-        function distance(p1, p2) {
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (как в hand_tracker.py) ---
+        function calculateDistance(p1, p2) {
             return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
         }
 
         function getFingerStates(landmarks, handType) {
-            const f = [false, false, false, false, false];
+            // fingers: [thumb, index, middle, ring, pinky]
+            const fingers = [false, false, false, false, false];
+
+            // Большой палец (по горизонтали)
             if (handType === 'Right') {
-                f[0] = landmarks[4].x < landmarks[3].x;
+                fingers[0] = landmarks[4].x < landmarks[3].x;
             } else {
-                f[0] = landmarks[4].x > landmarks[3].x;
+                fingers[0] = landmarks[4].x > landmarks[3].x;
             }
-            f[1] = landmarks[8].y < landmarks[6].y;
-            f[2] = landmarks[12].y < landmarks[10].y;
-            f[3] = landmarks[16].y < landmarks[14].y;
-            f[4] = landmarks[20].y < landmarks[18].y;
-            return f;
+
+            // Остальные пальцы (по Y)
+            fingers[1] = landmarks[8].y < landmarks[6].y; // Указательный
+            fingers[2] = landmarks[12].y < landmarks[10].y; // Средний
+            fingers[3] = landmarks[16].y < landmarks[14].y; // Безымянный
+            fingers[4] = landmarks[20].y < landmarks[18].y; // Мизинец
+
+            return fingers;
         }
 
-        function isCherryGesture(landmarks) {
-            const thumbTip = landmarks[4];
-            const tips = [8, 12, 16, 20];
-            let close = 0;
-            for (const idx of tips) {
-                if (distance(thumbTip, landmarks[idx]) < 0.08) close++;
+        function isCherryGesture(landmarks, handType) {
+            // Проверка жеста "Вишенка на торте" как в hand_tracker.py
+            const points = landmarks;
+            const thumbTip = points[4];
+            const fingerTips = [8, 12, 16, 20];
+            let closeFingers = 0;
+            const maxDistance = 0.08;
+
+            for (const tipIdx of fingerTips) {
+                const dist = calculateDistance(thumbTip, points[tipIdx]);
+                if (dist < maxDistance) {
+                    closeFingers++;
+                }
             }
-            return close >= 3;
+
+            if (closeFingers >= 3) {
+                return true;
+            }
+
+            // Альтернативная проверка: все пальцы согнуты и близко к центру
+            let centerX = 0,
+                centerY = 0;
+            for (const tipIdx of fingerTips) {
+                centerX += points[tipIdx].x;
+                centerY += points[tipIdx].y;
+            }
+            centerX /= 4;
+            centerY /= 4;
+
+            const centerToThumb = calculateDistance(thumbTip, { x: centerX, y: centerY });
+
+            if (centerToThumb < 0.06) {
+                let maxX = -Infinity,
+                    minX = Infinity;
+                let maxY = -Infinity,
+                    minY = Infinity;
+                for (const tipIdx of fingerTips) {
+                    maxX = Math.max(maxX, points[tipIdx].x);
+                    minX = Math.min(minX, points[tipIdx].x);
+                    maxY = Math.max(maxY, points[tipIdx].y);
+                    minY = Math.min(minY, points[tipIdx].y);
+                }
+                if ((maxX - minX) < 0.08 && (maxY - minY) < 0.08) {
+                    return true;
+                }
+            }
+
+            // Проверка на жест "щепотка"
+            const indexDist = calculateDistance(points[8], thumbTip);
+            const middleDist = calculateDistance(points[12], thumbTip);
+            if (indexDist < 0.04 && middleDist < 0.05) {
+                const ringDist = calculateDistance(points[16], thumbTip);
+                const pinkyDist = calculateDistance(points[20], thumbTip);
+                if (ringDist < 0.06 && pinkyDist < 0.06) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
+        // --- ГЛАВНАЯ ФУНКЦИЯ РАСПОЗНАВАНИЯ (как в recognize_gesture) ---
         function recognizeGesture(landmarks, handedness) {
             if (!landmarks || landmarks.length === 0) {
                 return { gesture: "Нет рук", confidence: 1.0 };
@@ -944,78 +962,143 @@
 
             const numHands = landmarks.length;
 
+            // ========== ЖЕСТЫ С ДВУМЯ РУКАМИ ==========
             if (numHands === 2) {
-                const h1 = landmarks[0];
-                const h2 = landmarks[1];
+                const hand1 = landmarks[0];
+                const hand2 = landmarks[1];
                 const type1 = handedness?.[0]?.label || 'Right';
                 const type2 = handedness?.[1]?.label || 'Left';
-                const f1 = getFingerStates(h1, type1);
-                const f2 = getFingerStates(h2, type2);
-                const c1 = f1.filter(Boolean).length;
-                const c2 = f2.filter(Boolean).length;
 
-                if (c1 === 0 && c2 === 0) {
+                const fingers1 = getFingerStates(hand1, type1);
+                const fingers2 = getFingerStates(hand2, type2);
+
+                const count1 = fingers1.filter(Boolean).length;
+                const count2 = fingers2.filter(Boolean).length;
+
+                // FIST (кулаки)
+                if (count1 === 0 || count2 === 0) {
                     return { gesture: "Кулак", confidence: 0.95 };
                 }
 
-                if (c1 === 5 && c2 === 5) {
-                    const thumb1_x = h1[4].x,
-                        palm1_x = h1[0].x;
-                    const thumb2_x = h2[4].x,
-                        palm2_x = h2[0].x;
-                    if ((type1 === 'Left' && thumb1_x > palm1_x && type2 === 'Right' && thumb2_x < palm2_x) ||
-                        (type1 === 'Right' && thumb1_x < palm1_x && type2 === 'Left' && thumb2_x > palm2_x)) {
-                        return { gesture: "Две ладони", confidence: 0.95 };
-                    }
+                // OPEN PALM (две открытые ладони)
+                if (count1 === 5 && count2 === 5) {
                     return { gesture: "Открытая ладонь", confidence: 0.9 };
                 }
 
-                if (c1 === 5 && c2 === 5) {
-                    const palm1_y = h1[0].y,
-                        palm2_y = h2[0].y;
-                    if (Math.abs(palm1_y - palm2_y) < 0.15) {
-                        return { gesture: "Я не знаю", confidence: 0.85 };
+                // TWO PALMS PARALLEL (две ладони параллельно)
+                const thumb1_x = hand1[4].x;
+                const thumb2_x = hand2[4].x;
+                const palm1_x = hand1[0].x;
+                const palm2_x = hand2[0].x;
+
+                if (type1 === 'Left' && type2 === 'Right') {
+                    if (thumb1_x > palm1_x && thumb2_x < palm2_x) {
+                        if (count1 === 5 && count2 === 5) {
+                            return { gesture: "Две ладони параллельно", confidence: 0.95 };
+                        }
+                    }
+                } else if (type1 === 'Right' && type2 === 'Left') {
+                    if (thumb1_x < palm1_x && thumb2_x > palm2_x) {
+                        if (count1 === 5 && count2 === 5) {
+                            return { gesture: "Две ладони параллельно", confidence: 0.95 };
+                        }
+                    }
+                }
+
+                // I DON'T KNOW (Я не знаю)
+                if (type1 === 'Left' && type2 === 'Right') {
+                    if (thumb1_x < palm1_x && thumb2_x > palm2_x) {
+                        if (count1 === 5 && count2 === 5) {
+                            return { gesture: "Я не знаю", confidence: 0.85 };
+                        }
+                    }
+                } else if (type1 === 'Right' && type2 === 'Left') {
+                    if (thumb1_x > palm1_x && thumb2_x < palm2_x) {
+                        if (count1 === 5 && count2 === 5) {
+                            return { gesture: "Я не знаю", confidence: 0.85 };
+                        }
                     }
                 }
 
                 return { gesture: "Две руки", confidence: 0.7 };
             }
 
-            const hand = landmarks[0];
-            const handType = handedness?.[0]?.label || 'Right';
-            const fingers = getFingerStates(hand, handType);
-            const count = fingers.filter(Boolean).length;
+            // ========== ЖЕСТЫ С ОДНОЙ РУКОЙ ==========
+            if (numHands === 1) {
+                const hand = landmarks[0];
+                const handType = handedness?.[0]?.label || 'Right';
+                const points = hand;
 
-            if (count === 0) return { gesture: "Кулак", confidence: 0.95 };
-            if (isCherryGesture(hand)) {
-                return { gesture: "Вишенка", confidence: 0.9 };
-            }
-            if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
-                if (distance(hand[4], hand[8]) < 0.06) {
-                    return { gesture: "Мало", confidence: 0.92 };
+                const fingers = getFingerStates(points, handType);
+                const fingerCount = fingers.filter(Boolean).length;
+
+                // FIST (кулак)
+                if (fingerCount === 0) {
+                    return { gesture: "Кулак", confidence: 0.95 };
                 }
-            }
-            if (!fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
-                return { gesture: "Указываю вверх", confidence: 0.92 };
-            }
-            if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
-                if (hand[4].y < hand[3].y) {
-                    return { gesture: "Большой палец вверх", confidence: 0.95 };
+
+                // CHERRY (вишенка на торте)
+                if (isCherryGesture(points, handType)) {
+                    return { gesture: "Вишенка на торте", confidence: 0.9 };
                 }
-            }
-            if (!fingers[0] && fingers[1] && fingers[2] && !fingers[3] && !fingers[4]) {
-                return { gesture: "Мир", confidence: 0.95 };
-            }
-            if (fingers[1] && !fingers[2] && !fingers[3] && fingers[4]) {
-                return { gesture: "Рок", confidence: 0.88 };
-            }
-            if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
-                if (distance(hand[4], hand[8]) < 0.05) {
-                    return { gesture: "OK", confidence: 0.92 };
+
+                // LITTLE (жест "мало")
+                if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
+                    const dist = calculateDistance(points[4], points[8]);
+                    if (dist < 0.08) {
+                        return { gesture: "Мало", confidence: 0.92 };
+                    }
                 }
-            }
-            if (count === 5) {
-                return { gesture: "Открытая ладонь", confidence: 0.95 };
+
+                // POINTING UP (указываю вверх)
+                if (!fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
+                    return { gesture: "Указывая вверх", confidence: 0.92 };
+                }
+
+                // THUMBS UP (большой палец вверх)
+                if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
+                    if (points[4].y < points[3].y) {
+                        return { gesture: "Большой палец вверх", confidence: 0.95 };
+                    }
+                }
+
+                // PEACE / VICTORY (Мир)
+                if (!fingers[0] && fingers[1] && fingers[2] && !fingers[3] && !fingers[4]) {
+                    return { gesture: "Мир", confidence: 0.95 };
+                }
+
+                // OPEN PALM (открытая ладонь)
+                if (fingerCount === 5) {
+                    return { gesture: "Открытая ладонь", confidence: 0.95 };
+                }
+
+                // ROCK (Рок)
+                if (fingers[1] && !fingers[2] && !fingers[3] && fingers[4]) {
+                    return { gesture: "Рок", confidence: 0.88 };
+                }
+
+                // OK жест
+                if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
+                    const dist = calculateDistance(points[4], points[8]);
+                    if (dist < 0.04) {
+                        return { gesture: "OK", confidence: 0.92 };
+                    }
+                }
+
+                // По умолчанию
+                if (fingerCount === 1) {
+                    if (fingers[0]) return { gesture: "Только большой палец", confidence: 0.5 };
+                    if (fingers[1]) return { gesture: "Только указательный", confidence: 0.5 };
+                    return { gesture: "Один палец", confidence: 0.5 };
+                } else if (fingerCount === 2) {
+                    return { gesture: "Два пальца", confidence: 0.5 };
+                } else if (fingerCount === 3) {
+                    return { gesture: "Три пальца", confidence: 0.5 };
+                } else if (fingerCount === 4) {
+                    return { gesture: "Четыре пальца", confidence: 0.5 };
+                }
+
+                return { gesture: "Неизвестно", confidence: 0.3 };
             }
 
             return { gesture: "Неизвестно", confidence: 0.3 };
@@ -1030,8 +1113,6 @@
         const canvas = document.getElementById('output-canvas');
         const ctx = canvas.getContext('2d');
 
-        let lastGesture = "Нет рук";
-        let lastConfidence = 1.0;
         let fps = 0,
             frameCount = 0,
             lastFpsTime = Date.now();
@@ -1046,7 +1127,9 @@
             const placeholder = document.getElementById('memePlaceholder');
             const memeFile = GESTURE_MEME_MAP[gesture];
 
-            if (memeFile && gesture !== "Нет рук" && gesture !== "Неизвестно" && gesture !== "Две руки") {
+            if (memeFile && gesture !== "Нет рук" && gesture !== "Неизвестно" && gesture !== "Две руки" &&
+                gesture !== "Один палец" && gesture !== "Два пальца" && gesture !== "Три пальца" && gesture !== "Четыре пальца" &&
+                gesture !== "Только большой палец" && gesture !== "Только указательный") {
                 img.src = `images/${memeFile}?t=${Date.now()}`;
                 img.onload = function() {
                     img.classList.add('active');
@@ -1055,17 +1138,17 @@
                 img.onerror = function() {
                     img.classList.remove('active');
                     placeholder.style.display = 'flex';
-                    placeholder.textContent = getEmojiForGesture(gesture);
+                    placeholder.textContent = 'Нет картинки для жеста';
                 };
             } else {
                 img.classList.remove('active');
                 placeholder.style.display = 'flex';
                 if (gesture === "Нет рук") {
-                    placeholder.textContent = '👀 Ожидание жеста...';
+                    placeholder.textContent = 'Ожидание жеста...';
                 } else if (gesture === "Две руки") {
-                    placeholder.textContent = '🤝 Две руки (покажи жест)';
+                    placeholder.textContent = 'Две руки (покажите жест)';
                 } else {
-                    placeholder.textContent = getEmojiForGesture(gesture) || '🤔 Неизвестный жест';
+                    placeholder.textContent = gesture || 'Неизвестный жест';
                 }
             }
 
@@ -1089,23 +1172,6 @@
             });
         }
 
-        function getEmojiForGesture(gesture) {
-            const emojiMap = {
-                "Указываю вверх": "☝️",
-                "Большой палец вверх": "👍",
-                "Мир": "✌️",
-                "Мало": "🤏",
-                "Две ладони": "✋✋",
-                "Я не знаю": "🤷",
-                "Открытая ладонь": "✋",
-                "Вишенка": "🍒",
-                "Кулак": "✊",
-                "Рок": "🤘",
-                "OK": "👌"
-            };
-            return emojiMap[gesture] || '🤔';
-        }
-
         function onResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1119,6 +1185,7 @@
                     confidence: handedness[i]?.score || 0.5
                 }));
 
+                // Рисуем скелет
                 for (let i = 0; i < landmarks.length; i++) {
                     const hand = landmarks[i];
                     const connections = [
@@ -1176,6 +1243,7 @@
                     }
                 }
 
+                // Распознаем жест (передаем тип руки)
                 const result = recognizeGesture(landmarks, handedness);
                 updateUI(result.gesture, result.confidence, hands);
             } else {
@@ -1193,6 +1261,7 @@
             }
         }
 
+        // --- Инициализация MediaPipe ---
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
@@ -1204,7 +1273,7 @@
         });
         hands.onResults(onResults);
 
-        // ===== ЗАПУСК КАМЕРЫ (БЕЗ ЗЕРКАЛЬНОСТИ) =====
+        // --- Запуск камеры ---
         const camera = new Camera(video, {
             onFrame: async () => { await hands.send({ image: video }); },
             width: 640,
@@ -1213,6 +1282,7 @@
         });
         camera.start();
 
+        // --- Библиотека жестов ---
         const tagsContainer = document.getElementById('gestureTagsCloud');
         GESTURE_LIST.forEach(g => {
             const span = document.createElement('span');
@@ -1221,6 +1291,7 @@
             tagsContainer.appendChild(span);
         });
 
+        // --- Адаптация canvas ---
         function resizeCanvas() {
             const rect = document.querySelector('.video-wrapper').getBoundingClientRect();
             canvas.width = rect.width;
@@ -1229,7 +1300,7 @@
         window.addEventListener('resize', resizeCanvas);
         setTimeout(resizeCanvas, 200);
 
-        console.log('👋 Gesture Wave запущен!');
+        console.log('Gesture Wave запущен!');
         console.log('Доступные жесты:', GESTURE_LIST.join(', '));
     </script>
 
