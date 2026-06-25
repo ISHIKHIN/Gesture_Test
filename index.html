@@ -37,7 +37,7 @@
             position: relative;
         }
 
-        /* 3D-фон */
+        /* 3D-фон - как в оригинале */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -167,6 +167,8 @@
             height: 100%;
             object-fit: cover;
             display: block;
+            transform: scaleX(-1);
+            /* Убираем зеркальность */
         }
 
         #output-canvas {
@@ -714,7 +716,7 @@
                         </div>
                         <div class="feature-content">
                             <div class="feature-tag">Интерактивное</div>
-                            <p>Мгновенная визуальная реакция на Ваши жесты. Динамический контент, реагирующий на Ваши движения в реальном времени.</p>
+                            <p>Мгновенная визуальная реакция на Ваши жесты. Динамический контент, реагирующий на Ваши движения в режиме реального времени.</p>
                         </div>
                     </div>
                 </div>
@@ -753,83 +755,98 @@
 
     <script>
         // ============================================================
-        //  1. THREE.JS — 3D-ФОН (ЗВЁЗДЫ)
+        //  1. THREE.JS — 3D-ФОН (ТОЧНО КАК В ОРИГИНАЛЕ)
         // ============================================================
         (function init3D() {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            const renderer = new THREE.WebGLRenderer({
+                alpha: true,
+                antialias: true
+            });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setClearColor(0x000000, 0);
             container.appendChild(renderer.domElement);
 
-            // Мелкие звёзды
+            // --- Мелкие звёзды (2000) ---
             const starsCount = 2000;
             const starsGeo = new THREE.BufferGeometry();
             const starsPos = new Float32Array(starsCount * 3);
             const starsCol = new Float32Array(starsCount * 3);
+
             for (let i = 0; i < starsCount; i++) {
                 starsPos[i * 3] = (Math.random() - 0.5) * 2000;
                 starsPos[i * 3 + 1] = (Math.random() - 0.5) * 1000;
                 starsPos[i * 3 + 2] = (Math.random() - 0.5) * 500 - 150;
+
                 const t = Math.random();
                 if (t < 0.5) {
                     starsCol[i * 3] = 0.5 + Math.random() * 0.5;
                     starsCol[i * 3 + 1] = 0.6 + Math.random() * 0.4;
                     starsCol[i * 3 + 2] = 1.0;
                 } else if (t < 0.8) {
-                    starsCol[i * 3] = 1;
-                    starsCol[i * 3 + 1] = 1;
-                    starsCol[i * 3 + 2] = 1;
+                    starsCol[i * 3] = 1.0;
+                    starsCol[i * 3 + 1] = 1.0;
+                    starsCol[i * 3 + 2] = 1.0;
                 } else {
                     starsCol[i * 3] = 0.2 + Math.random() * 0.3;
                     starsCol[i * 3 + 1] = 0.3 + Math.random() * 0.3;
                     starsCol[i * 3 + 2] = 1.0;
                 }
             }
+
             starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
             starsGeo.setAttribute('color', new THREE.BufferAttribute(starsCol, 3));
+
             const starsMat = new THREE.PointsMaterial({
                 size: 1.8,
                 vertexColors: true,
                 transparent: true,
                 opacity: 0.9,
-                blending: THREE.AdditiveBlending
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
             });
+
             const stars = new THREE.Points(starsGeo, starsMat);
             scene.add(stars);
 
-            // Крупные звёзды
+            // --- Крупные звёзды (400) ---
             const bigCount = 400;
             const bigGeo = new THREE.BufferGeometry();
             const bigPos = new Float32Array(bigCount * 3);
             const bigCol = new Float32Array(bigCount * 3);
+
             for (let i = 0; i < bigCount; i++) {
                 bigPos[i * 3] = (Math.random() - 0.5) * 1800;
                 bigPos[i * 3 + 1] = (Math.random() - 0.5) * 900;
                 bigPos[i * 3 + 2] = (Math.random() - 0.5) * 400 - 100;
+
                 const isBlue = Math.random() > 0.6;
                 if (isBlue) {
                     bigCol[i * 3] = 0.5 + Math.random() * 0.5;
                     bigCol[i * 3 + 1] = 0.7 + Math.random() * 0.3;
                     bigCol[i * 3 + 2] = 1.0;
                 } else {
-                    bigCol[i * 3] = 1;
-                    bigCol[i * 3 + 1] = 1;
-                    bigCol[i * 3 + 2] = 1;
+                    bigCol[i * 3] = 1.0;
+                    bigCol[i * 3 + 1] = 1.0;
+                    bigCol[i * 3 + 2] = 1.0;
                 }
             }
+
             bigGeo.setAttribute('position', new THREE.BufferAttribute(bigPos, 3));
             bigGeo.setAttribute('color', new THREE.BufferAttribute(bigCol, 3));
+
             const bigMat = new THREE.PointsMaterial({
                 size: 1.0,
                 vertexColors: true,
                 transparent: true,
                 opacity: 0.95,
-                blending: THREE.AdditiveBlending
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
             });
+
             const bigStars = new THREE.Points(bigGeo, bigMat);
             scene.add(bigStars);
 
@@ -837,17 +854,27 @@
 
             let mouseX = 0,
                 mouseY = 0;
+
             document.addEventListener('mousemove', (e) => {
                 mouseX = (e.clientX / window.innerWidth) * 2 - 1;
                 mouseY = (e.clientY / window.innerHeight) * 2 - 1;
             });
 
+            document.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) {
+                    mouseX = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+                    mouseY = (e.touches[0].clientY / window.innerHeight) * 2 - 1;
+                }
+            });
+
             function animate() {
                 requestAnimationFrame(animate);
-                stars.rotation.y = mouseX * 0.15;
-                stars.rotation.x = mouseY * 0.1;
-                bigStars.rotation.y = mouseX * 0.12;
-                bigStars.rotation.x = mouseY * 0.08;
+
+                stars.rotation.y += (mouseX * 0.15 - stars.rotation.y) * 0.05;
+                stars.rotation.x += (mouseY * 0.1 - stars.rotation.x) * 0.05;
+                bigStars.rotation.y += (mouseX * 0.12 - bigStars.rotation.y) * 0.05;
+                bigStars.rotation.x += (mouseY * 0.08 - bigStars.rotation.x) * 0.05;
+
                 renderer.render(scene, camera);
             }
             animate();
@@ -887,15 +914,12 @@
         }
 
         function getFingerStates(landmarks, handType) {
-            // fingers: [thumb, index, middle, ring, pinky]
             const f = [false, false, false, false, false];
-            // Большой палец (по горизонтали)
             if (handType === 'Right') {
                 f[0] = landmarks[4].x < landmarks[3].x;
             } else {
                 f[0] = landmarks[4].x > landmarks[3].x;
             }
-            // Остальные (по Y)
             f[1] = landmarks[8].y < landmarks[6].y;
             f[2] = landmarks[12].y < landmarks[10].y;
             f[3] = landmarks[16].y < landmarks[14].y;
@@ -904,7 +928,6 @@
         }
 
         function isCherryGesture(landmarks) {
-            // Все пальцы касаются большого
             const thumbTip = landmarks[4];
             const tips = [8, 12, 16, 20];
             let close = 0;
@@ -914,7 +937,6 @@
             return close >= 3;
         }
 
-        // --- Главная функция распознавания (как в hand_tracker.py) ---
         function recognizeGesture(landmarks, handedness) {
             if (!landmarks || landmarks.length === 0) {
                 return { gesture: "Нет рук", confidence: 1.0 };
@@ -922,7 +944,6 @@
 
             const numHands = landmarks.length;
 
-            // === ДВЕ РУКИ ===
             if (numHands === 2) {
                 const h1 = landmarks[0];
                 const h2 = landmarks[1];
@@ -933,12 +954,10 @@
                 const c1 = f1.filter(Boolean).length;
                 const c2 = f2.filter(Boolean).length;
 
-                // Кулаки
                 if (c1 === 0 && c2 === 0) {
                     return { gesture: "Кулак", confidence: 0.95 };
                 }
 
-                // Две ладони параллельно
                 if (c1 === 5 && c2 === 5) {
                     const thumb1_x = h1[4].x,
                         palm1_x = h1[0].x;
@@ -951,7 +970,6 @@
                     return { gesture: "Открытая ладонь", confidence: 0.9 };
                 }
 
-                // Я не знаю
                 if (c1 === 5 && c2 === 5) {
                     const palm1_y = h1[0].y,
                         palm2_y = h2[0].y;
@@ -963,57 +981,39 @@
                 return { gesture: "Две руки", confidence: 0.7 };
             }
 
-            // === ОДНА РУКА ===
             const hand = landmarks[0];
             const handType = handedness?.[0]?.label || 'Right';
             const fingers = getFingerStates(hand, handType);
             const count = fingers.filter(Boolean).length;
 
-            // Кулак
             if (count === 0) return { gesture: "Кулак", confidence: 0.95 };
-
-            // Вишенка
             if (isCherryGesture(hand)) {
                 return { gesture: "Вишенка", confidence: 0.9 };
             }
-
-            // Мало (большой + указательный близко)
             if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                 if (distance(hand[4], hand[8]) < 0.06) {
                     return { gesture: "Мало", confidence: 0.92 };
                 }
             }
-
-            // Указываю вверх
             if (!fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                 return { gesture: "Указываю вверх", confidence: 0.92 };
             }
-
-            // Большой палец вверх
             if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                 if (hand[4].y < hand[3].y) {
                     return { gesture: "Большой палец вверх", confidence: 0.95 };
                 }
             }
-
-            // Мир (V-знак)
             if (!fingers[0] && fingers[1] && fingers[2] && !fingers[3] && !fingers[4]) {
                 return { gesture: "Мир", confidence: 0.95 };
             }
-
-            // Рок (коза)
             if (fingers[1] && !fingers[2] && !fingers[3] && fingers[4]) {
                 return { gesture: "Рок", confidence: 0.88 };
             }
-
-            // OK
             if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !fingers[4]) {
                 if (distance(hand[4], hand[8]) < 0.05) {
                     return { gesture: "OK", confidence: 0.92 };
                 }
             }
-
-            // Открытая ладонь
             if (count === 5) {
                 return { gesture: "Открытая ладонь", confidence: 0.95 };
             }
@@ -1036,38 +1036,42 @@
             frameCount = 0,
             lastFpsTime = Date.now();
 
-        // --- Обновление UI ---
         function updateUI(gesture, confidence, hands) {
-            // Имя жеста
             document.getElementById('gestureName').textContent = gesture;
             document.getElementById('gestureConfidence').textContent =
                 confidence > 0 ? `уверенность: ${Math.round(confidence * 100)}%` : 'ожидание...';
             document.getElementById('confidenceFill').style.width = `${confidence * 100}%`;
 
-            // Мем
             const img = document.getElementById('memeImage');
             const placeholder = document.getElementById('memePlaceholder');
             const memeFile = GESTURE_MEME_MAP[gesture];
 
-            if (memeFile && gesture !== "Нет рук" && gesture !== "Неизвестно") {
-                img.src = memeFile + '?t=' + Date.now();
-                img.classList.add('active');
-                placeholder.style.display = 'none';
+            if (memeFile && gesture !== "Нет рук" && gesture !== "Неизвестно" && gesture !== "Две руки") {
+                img.src = `images/${memeFile}?t=${Date.now()}`;
+                img.onload = function() {
+                    img.classList.add('active');
+                    placeholder.style.display = 'none';
+                };
+                img.onerror = function() {
+                    img.classList.remove('active');
+                    placeholder.style.display = 'flex';
+                    placeholder.textContent = getEmojiForGesture(gesture);
+                };
             } else {
                 img.classList.remove('active');
                 placeholder.style.display = 'flex';
                 if (gesture === "Нет рук") {
                     placeholder.textContent = '👀 Ожидание жеста...';
+                } else if (gesture === "Две руки") {
+                    placeholder.textContent = '🤝 Две руки (покажи жест)';
                 } else {
-                    placeholder.textContent = '🤔 Неизвестный жест';
+                    placeholder.textContent = getEmojiForGesture(gesture) || '🤔 Неизвестный жест';
                 }
             }
 
-            // Количество рук
             const handCount = hands ? hands.length : 0;
             document.getElementById('handCount').textContent = handCount;
 
-            // Список рук
             const handDiv = document.getElementById('handListMini');
             if (hands && hands.length > 0) {
                 handDiv.innerHTML = hands.map((h, i) =>
@@ -1080,13 +1084,28 @@
                 handDiv.innerHTML = '<div style="color:#666;font-size:12px;margin-top:8px;">нет рук</div>';
             }
 
-            // Подсветка тегов
             document.querySelectorAll('.gesture-tag').forEach(tag => {
                 tag.classList.toggle('active', tag.textContent === gesture);
             });
         }
 
-        // --- Обработка результатов MediaPipe ---
+        function getEmojiForGesture(gesture) {
+            const emojiMap = {
+                "Указываю вверх": "☝️",
+                "Большой палец вверх": "👍",
+                "Мир": "✌️",
+                "Мало": "🤏",
+                "Две ладони": "✋✋",
+                "Я не знаю": "🤷",
+                "Открытая ладонь": "✋",
+                "Вишенка": "🍒",
+                "Кулак": "✊",
+                "Рок": "🤘",
+                "OK": "👌"
+            };
+            return emojiMap[gesture] || '🤔';
+        }
+
         function onResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1100,7 +1119,6 @@
                     confidence: handedness[i]?.score || 0.5
                 }));
 
-                // Рисуем скелет
                 for (let i = 0; i < landmarks.length; i++) {
                     const hand = landmarks[i];
                     const connections = [
@@ -1148,6 +1166,14 @@
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
+
+                    if (handedness[i]) {
+                        const label = handedness[i].label;
+                        const wrist = hand[0];
+                        ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
+                        ctx.font = '14px Inter, sans-serif';
+                        ctx.fillText(label, wrist.x * canvas.width - 20, wrist.y * canvas.height - 20);
+                    }
                 }
 
                 const result = recognizeGesture(landmarks, handedness);
@@ -1156,7 +1182,6 @@
                 updateUI("Нет рук", 1.0, []);
             }
 
-            // FPS
             frameCount++;
             const now = Date.now();
             if (now - lastFpsTime > 1000) {
@@ -1168,7 +1193,6 @@
             }
         }
 
-        // --- Инициализация MediaPipe ---
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
@@ -1180,15 +1204,15 @@
         });
         hands.onResults(onResults);
 
-        // --- Запуск камеры ---
+        // ===== ЗАПУСК КАМЕРЫ (БЕЗ ЗЕРКАЛЬНОСТИ) =====
         const camera = new Camera(video, {
             onFrame: async () => { await hands.send({ image: video }); },
             width: 640,
-            height: 480
+            height: 480,
+            facingMode: "user"
         });
         camera.start();
 
-        // --- Библиотека жестов (теги) ---
         const tagsContainer = document.getElementById('gestureTagsCloud');
         GESTURE_LIST.forEach(g => {
             const span = document.createElement('span');
@@ -1197,7 +1221,6 @@
             tagsContainer.appendChild(span);
         });
 
-        // --- Адаптация canvas ---
         function resizeCanvas() {
             const rect = document.querySelector('.video-wrapper').getBoundingClientRect();
             canvas.width = rect.width;
@@ -1211,4 +1234,4 @@
     </script>
 
 </body>
-</html>\
+</html>
